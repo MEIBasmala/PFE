@@ -4,7 +4,9 @@ import { createPortal } from 'react-dom';
 import { Bot, Send, StopCircle, Trash2, X, Zap } from 'lucide-react';
 import { chatbotApi, type ChatMessage } from '@/services/api/chatbot.api';
 import { useAuth } from '@/contexts/AuthContext';
-
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui";
+import { useNavigate } from 'react-router-dom';
 interface UIMessage {
   id: string;
   role: 'USER' | 'ASSISTANT';
@@ -25,6 +27,11 @@ const SUGGESTED = [
 export default function PatientChatbot() {
   const { user } = useAuth();
   const firstName = user?.fullName?.split(' ')[0] ?? 'there';
+
+  const { packageInfo } = useSubscription();
+  const chatbotEnabled = packageInfo?.chatbot ?? false;
+
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -176,8 +183,8 @@ export default function PatientChatbot() {
 
           <div
             className="fixed z-[999] flex flex-col overflow-hidden
-    left-4 right-4 bottom-24 rounded-2xl
-    md:bottom-[88px] md:right-6 md:left-auto md:w-[380px] md:rounded-2xl"
+    left-4 right-4 bottom-24 rounded-lg
+    md:bottom-[88px] md:right-6 md:left-auto md:w-[380px] md:rounded-lg"
             style={{
               background: 'rgba(255,255,255,0.97)',
               backdropFilter: 'blur(20px)',
@@ -188,7 +195,7 @@ export default function PatientChatbot() {
           >
             {/* Header */}
             <div
-              className="flex items-center justify-between px-4 py-3 flex-shrink-0 rounded-t-[28px]"
+              className="flex items-center justify-between px-4 py-3 flex-shrink-0 rounded-t-lg"
               style={{ background: 'linear-gradient(135deg, hsl(var(--green)), hsl(var(--orange)))' }}
             >
               <div className="flex items-center gap-3">
@@ -205,7 +212,7 @@ export default function PatientChatbot() {
                     style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${isStreaming ? 'bg-yellow-300 animate-pulse' : 'bg-green-300'
+                      className={`w-1.5 h-1.5 rounded-md ${isStreaming ? 'bg-yellow-300 animate-pulse' : 'bg-green-300'
                         }`}
                     />
                     {isStreaming ? 'Thinking…' : 'Online · Nutrition AI'}
@@ -299,8 +306,8 @@ export default function PatientChatbot() {
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  disabled={isStreaming}
-                  placeholder="Ask about nutrition…"
+                  disabled={isStreaming || !chatbotEnabled}
+                  placeholder={chatbotEnabled ? "Ask about nutrition…" : "Upgrade to unlock chatbot"}
                   className="flex-1 resize-none rounded-2xl border px-3 py-2 text-sm outline-none transition-all"
                   style={{
                     borderColor: 'hsl(var(--gray-line))',
@@ -329,20 +336,35 @@ export default function PatientChatbot() {
                 ) : (
                   <button
                     onClick={send}
-                    disabled={!input.trim()}
+                    disabled={!chatbotEnabled || !input.trim()}
                     className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition disabled:opacity-60"
                     style={{
-                      background: input.trim() ? 'hsl(var(--orange))' : 'hsl(var(--gray-20))',
+                      background: (chatbotEnabled && input.trim()) ? 'hsl(var(--orange))' : 'hsl(var(--gray-20))',
                       borderRadius: 12,
                     }}
                   >
-                    <Send size={16} className={input.trim() ? 'text-white' : 'text-muted-foreground'} />
+                    <Send size={16} className={(chatbotEnabled && input.trim()) ? 'text-white' : 'text-muted-foreground'} />
                   </button>
                 )}
               </div>
-              <p className="text-center mt-2 text-[10px] md:text-xs text-muted-foreground">
-                NutriBot can make mistakes — consult your nutritionist for medical advice.
-              </p>
+
+              {!chatbotEnabled && (
+                <Alert variant="info" className="mt-3 bg-[hsl(var(--saffron-light))] border-[hsl(var(--saffron))] text-[#8a6200]">
+                  <AlertTitle className="!mb-0 font-syne font-bold text-sm">
+                    ⚡ Chatbot not available
+                  </AlertTitle>
+                  <AlertDescription className="text-xs">
+                    Your current plan does not include the AI assistant.
+                    <button
+                      onClick={() => navigate("/patient/subscription")}
+                      className="ml-2 inline-flex items-center rounded-md bg-[hsl(var(--saffron))] px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-[hsl(var(--orange))]"
+                    >
+                      Upgrade now →
+
+                    </button>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           </div>
         </>

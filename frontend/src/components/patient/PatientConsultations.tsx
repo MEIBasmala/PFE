@@ -99,21 +99,21 @@ export default function PatientConsultations() {
   return (
     <div className="space-y-6">
       {/* Stats cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${s.color}`}>
-                {s.icon}
-              </div>
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{s.label}</div>
-                <div className="font-syne text-xl font-bold">{s.value}</div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+  {stats.map((s) => (
+    <Card key={s.label}>
+      <CardContent className="flex items-center gap-2 p-3 md:gap-3 md:p-4">
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.color} md:h-10 md:w-10`}>
+          {s.icon}
+        </div>
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground md:text-xs">{s.label}</div>
+          <div className="font-syne text-base font-bold md:text-xl">{s.value}</div>
+        </div>
+      </CardContent>
+    </Card>
+  ))}
+</div>
 
       {/* Tabs */}
       <Card>
@@ -245,7 +245,7 @@ function AppointmentCard({ appt, onCancel, onMessage, nutritionistUserIdMap }: {
   const getStatusBadge = () => {
     switch (appt.status) {
       case "CONFIRMED": return <Badge className="bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))] border-[hsl(var(--green))] border hover:bg-[hsl(var(--green-light))]">Confirmed</Badge>;
-      case "PENDING": return <Badge className="bg-[hsl(var(--saffron-light))] text-[hsl(27,60%,35%)] border-[hsl(var(--saffron))] border hover:bg-[hsl(var(--saffron-light))]">Pending</Badge>;
+      case "PENDING": return <Badge variant="outline">Pending</Badge>;
       case "CANCELLED": return <Badge variant="destructive">Cancelled</Badge>;
       case "COMPLETED": return <Badge className="bg-[hsl(var(--gray-bg))] text-[hsl(var(--text-m))] border-[hsl(var(--gray-line))] border hover:bg-[hsl(var(--gray-bg))]">Completed</Badge>;
       default: return <Badge variant="outline">{appt.status}</Badge>;
@@ -379,7 +379,7 @@ function BookingFlow({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))] text-xs font-bold">1</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-mg bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))] text-xs font-bold">1</span>
               Choose a nutritionist
             </CardTitle>
           </CardHeader>
@@ -397,14 +397,14 @@ function BookingFlow({
                   <div key={n.id} className="space-y-2">
                     <button
                       onClick={() => setSelectedNutri(n.id)}
-                      className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                      className={`w-full rounded-md border p-3 text-left transition-colors ${
                         selectedNutri === n.id
                           ? "border-[hsl(var(--green))] bg-[hsl(var(--green-light)/0.4)]"
                           : "border-border hover:bg-muted/50"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))] font-semibold">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))] font-semibold">
                           {n.user.fullName[0]?.toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">

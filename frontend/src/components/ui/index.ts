@@ -47,3 +47,4 @@ export { ScrollArea } from './scroll-area';
 export { ScrollBar } from './scroll-area';
 export { Toggle } from './toggle';
 export { default as ConfirmDialog } from './ConfirmDialog';
+export  { default as AnimateOnScroll, StaggerContainer } from './AnimateOnScroll';

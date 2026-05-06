@@ -1,6 +1,7 @@
 // src/components/patient/PatientHome.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -64,7 +65,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui";
-
+import AnimateOnScroll, { StaggerContainer, AnimatedCounter } from "@/components/ui/AnimateOnScroll";
 const DEFAULT_GOAL = 1800;
 const TTL = {
   profile: 120_000,
@@ -197,11 +198,11 @@ export default function PatientHome() {
 
   const daysToNext = upcoming
     ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(upcoming.scheduledAt).getTime() - Date.now()) / 86_400_000,
-        ),
-      )
+      0,
+      Math.ceil(
+        (new Date(upcoming.scheduledAt).getTime() - Date.now()) / 86_400_000,
+      ),
+    )
     : null;
 
   const measurements: Measurement = profile.data?.measurements?.[0] ?? {
@@ -232,111 +233,120 @@ export default function PatientHome() {
     <div className="space-y-5">
       {/* ── HERO: Welcome + calorie ring ─────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="md:col-span-2 overflow-hidden relative">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-30"
-            style={{
-              background:
-                "radial-gradient(ellipse at top right, hsl(var(--green-light)) 0%, transparent 70%)",
-            }}
-          />
-          <CardContent className="relative p-5">
-            <p className="text-sm text-muted-foreground">{greeting},</p>
-            <h2 className="font-syne text-2xl font-extrabold mt-0.5">
-              {firstName} 👋
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1.5 max-w-sm leading-relaxed">
-              {upcoming
-                ? `Next session in ${daysToNext} day${daysToNext === 1 ? "" : "s"} · ${formatShortDate(upcoming.scheduledAt)}`
-                : "No upcoming sessions — book one to stay on track."}
-            </p>
-            <div className="flex flex-wrap gap-2 mt-4">
-              <Button size="sm" onClick={() => navigate("/patient/ai")}>
-                <Camera className="mr-1.5 h-3.5 w-3.5" /> Scan meal
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate("/patient/consultations")}
-              >
-                <CalendarPlus className="mr-1.5 h-3.5 w-3.5" /> Book session
-              </Button>
-              {upcoming && (
+        {/* Welcome banner – spans 2 columns */}
+        <AnimateOnScroll
+          animation="fade-up"
+          duration={0.5}
+          className="md:col-span-2"
+        >
+          <Card className="overflow-hidden relative ambient-mesh h-full">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-30"
+              style={{
+                background:
+                  "radial-gradient(ellipse at top right, hsl(var(--green-light)) 0%, transparent 70%)",
+              }}
+            />
+            <CardContent className="relative p-5">
+              <p className="text-sm text-muted-foreground">{greeting},</p>
+              <h2 className="font-syne text-2xl font-extrabold mt-0.5">
+                {firstName} 👋
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-sm leading-relaxed">
+                {upcoming
+                  ? `Next session in ${daysToNext} day${daysToNext === 1 ? "" : "s"} · ${formatShortDate(upcoming.scheduledAt)}`
+                  : "No upcoming sessions — book one to stay on track."}
+              </p>
+              <div className="flex flex-wrap gap-2 mt-4">
+                <Button size="sm" onClick={() => navigate("/patient/ai")}>
+                  <Camera className="mr-1.5 h-3.5 w-3.5" /> Scan meal
+                </Button>
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    navigate("/patient/messages", {
-                      state: {
-                        openConversationWith: upcoming.nutritionist?.id,
-                      },
-                    })
-                  }
+                  variant="secondary"
+                  onClick={() => navigate("/patient/consultations")}
                 >
-                  <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
+                  <CalendarPlus className="mr-1.5 h-3.5 w-3.5" /> Book session
                 </Button>
-              )}
-            </div>
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs text-blue-600">
-              <Droplets className="h-3 w-3" /> Drink 2.5 L of water today
-            </div>
-          </CardContent>
-        </Card>
+                {upcoming && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      navigate("/patient/messages", {
+                        state: {
+                          openConversationWith: upcoming.nutritionist?.id,
+                        },
+                      })
+                    }
+                  >
+                    <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
+                  </Button>
+                )}
+              </div>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs text-blue-600">
+                <Droplets className="h-3 w-3" /> Drink 2.5 L of water today
+              </div>
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
 
         {/* Calorie ring */}
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center p-5 h-full gap-2">
-            <div className="relative w-28 h-28">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="none"
-                  stroke="hsl(var(--gray-line))"
-                  strokeWidth="10"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="none"
-                  stroke="hsl(var(--orange))"
-                  strokeWidth="10"
-                  strokeDasharray={`${2 * Math.PI * 40}`}
-                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - caloriesPct / 100)}`}
-                  strokeLinecap="round"
-                  style={{ transition: "stroke-dashoffset 0.6s ease" }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-syne text-xl font-extrabold text-[hsl(var(--orange))]">
-                  {diaryLoading ? "—" : totals.calories}
-                </span>
-                <span className="text-[10px] text-muted-foreground">kcal</span>
+        <AnimateOnScroll animation="scale-in" delay={0.15} duration={0.6} className="h-full">
+          <Card className="h-full">
+            <CardContent className="flex flex-col items-center justify-center p-5 h-full gap-2">
+              <div className="relative w-28 h-28">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="hsl(var(--gray-line))"
+                    strokeWidth="10"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="hsl(var(--orange))"
+                    strokeWidth="10"
+                    strokeDasharray={`${2 * Math.PI * 40}`}
+                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - caloriesPct / 100)}`}
+                    strokeLinecap="round"
+                    style={{ transition: "stroke-dashoffset 0.6s ease" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-syne text-xl font-extrabold text-[hsl(var(--orange))]">
+                    {diaryLoading ? "—" : totals.calories}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">kcal</span>
+                </div>
               </div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground">
-                of {goal.toLocaleString()} goal
+              <div className="text-center">
+                <div className="text-xs text-muted-foreground">
+                  of {goal.toLocaleString()} goal
+                </div>
+                <div className="font-semibold text-sm mt-0.5">
+                  {diaryLoading ? "—" : Math.max(0, goal - totals.calories)}{" "}
+                  remaining
+                </div>
               </div>
-              <div className="font-semibold text-sm mt-0.5">
-                {diaryLoading ? "—" : Math.max(0, goal - totals.calories)}{" "}
-                remaining
-              </div>
-            </div>
-            <Badge
-              variant={caloriesPct > 100 ? "destructive" : "secondary"}
-              className="text-xs"
-            >
-              {caloriesPct}% today
-            </Badge>
-          </CardContent>
-        </Card>
+              <Badge
+                variant={caloriesPct > 100 ? "destructive" : "secondary"}
+                className="text-xs"
+              >
+                {caloriesPct}% today
+              </Badge>
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
       </div>
 
       {/* ── STATS ROW ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <StaggerContainer className="grid grid-cols-2 gap-3 sm:grid-cols-4 items-stretch" staggerDelay={0.08}>
         <StatTile
           label="Weight"
           value={currentWeight ? `${currentWeight}` : "—"}
@@ -382,334 +392,345 @@ export default function PatientHome() {
           tone="green"
           onClick={() => navigate("/patient/subscription")}
         />
-      </div>
+      </StaggerContainer>
+
 
       {/* ── MEALS + CHART ────────────────────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Utensils className="h-4 w-4 text-[hsl(var(--orange))]" /> Today's
-              meals
-            </CardTitle>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => navigate("/patient/ai")}
-            >
-              <Camera className="mr-1 h-3.5 w-3.5" /> Log
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {diaryLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
-                ))}
-              </div>
-            ) : todaysMeals.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
-                <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--orange-20))] flex items-center justify-center text-2xl">
-                  🍽️
-                </div>
-                <p className="text-sm">No meals logged yet today.</p>
-                <Button size="sm" onClick={() => navigate("/patient/ai")}>
-                  <Camera className="mr-1.5 h-3.5 w-3.5" /> Scan your first meal
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {todaysMeals.map((log) => {
-                  const color =
-                    MEAL_COLORS[log.category] ?? "hsl(var(--orange))";
-                  return (
-                    <div
-                      key={log.id}
-                      className="flex items-center gap-3 rounded-xl border border-[hsl(var(--gray-line))] p-2.5 hover:bg-[hsl(var(--cream-bg))] transition-colors"
-                    >
-                      {log.imageUrl ? (
-                        <img
-                          src={log.imageUrl}
-                          alt={log.name}
-                          className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div
-                          className="h-10 w-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-                          style={{ background: `${color}20` }}
-                        >
-                          🍽️
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate text-sm font-semibold">
-                          {log.name}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span
-                            className="inline-block h-1.5 w-1.5 rounded-full"
-                            style={{ background: color }}
-                          />
-                          <span className="text-[11px] capitalize text-muted-foreground">
-                            {log.category}
-                          </span>
-                        </div>
-                      </div>
-                      <div
-                        className="text-sm font-bold whitespace-nowrap"
-                        style={{ color }}
-                      >
-                        {log.calories} kcal
-                      </div>
-                    </div>
-                  );
-                })}
-                {logs.length > 4 && (
-                  <button
-                    onClick={() => navigate("/patient/ai")}
-                    className="w-full rounded-xl border border-dashed border-[hsl(var(--gray-line))] py-2 text-xs text-muted-foreground hover:text-foreground hover:border-[hsl(var(--orange))] transition-colors"
-                  >
-                    +{logs.length - 4} more → View all
-                  </button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+  <AnimateOnScroll animation="fade-up" delay={0.1} className="h-full">
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-between text-base">
-              <span className="flex items-center gap-2">
-                <ChartPie className="h-4 w-4 text-[hsl(var(--saffron))]" /> This
-                week
-              </span>
-              <Badge variant="outline" className="font-normal text-xs">
-                avg {avgWeekly} kcal
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {weekLoading ? (
-              <Skeleton className="h-44 w-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height={176}>
-                <BarChart
-                  data={weekData}
-                  margin={{ top: 4, right: 0, left: -28, bottom: 0 }}
-                >
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 10 }}
-                    tickFormatter={(v) =>
-                      new Date(v).toLocaleDateString("en", { weekday: "short" })
-                    }
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 9 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    formatter={(v: number) => [`${v} kcal`, ""]}
-                    labelFormatter={(l) =>
-                      new Date(l).toLocaleDateString("en", {
-                        weekday: "long",
-                        month: "short",
-                        day: "numeric",
-                      })
-                    }
-                    contentStyle={{ borderRadius: 10, fontSize: 12 }}
-                  />
-                  <Bar dataKey="calories" radius={[6, 6, 0, 0]}>
-                    {weekData.map((entry) => (
-                      <Cell
-                        key={entry.date}
-                        fill={
-                          entry.date === todayIso
-                            ? "hsl(var(--orange))"
-                            : "hsl(var(--saffron-light))"
-                        }
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-            <div className="mt-3">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Today vs goal</span>
-                <span>
-                  {todayBar} / {goal} kcal
+          <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Utensils className="h-4 w-4 text-[hsl(var(--orange))]" /> Today's
+                meals
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => navigate("/patient/ai")}
+              >
+                <Camera className="mr-1 h-3.5 w-3.5" /> Log
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {diaryLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-14 w-full" />
+                  ))}
+                </div>
+              ) : todaysMeals.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
+                  <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--orange-20))] flex items-center justify-center text-2xl">
+                    🍽️
+                  </div>
+                  <p className="text-sm">No meals logged yet today.</p>
+                  <Button size="sm" onClick={() => navigate("/patient/ai")}>
+                    <Camera className="mr-1.5 h-3.5 w-3.5" /> Scan your first meal
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {todaysMeals.map((log) => {
+                    const color =
+                      MEAL_COLORS[log.category] ?? "hsl(var(--orange))";
+                    return (
+                      <div
+                        key={log.id}
+                        className="flex items-center gap-3 rounded-xl border border-[hsl(var(--gray-line))] p-2.5 hover:bg-[hsl(var(--cream-bg))] transition-colors"
+                      >
+                        {log.imageUrl ? (
+                          <img
+                            src={log.imageUrl}
+                            alt={log.name}
+                            className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="h-10 w-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                            style={{ background: `${color}20` }}
+                          >
+                            🍽️
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate text-sm font-semibold">
+                            {log.name}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span
+                              className="inline-block h-1.5 w-1.5 rounded-full"
+                              style={{ background: color }}
+                            />
+                            <span className="text-[11px] capitalize text-muted-foreground">
+                              {log.category}
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className="text-sm font-bold whitespace-nowrap"
+                          style={{ color }}
+                        >
+                          {log.calories} kcal
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {logs.length > 4 && (
+                    <button
+                      onClick={() => navigate("/patient/ai")}
+                      className="w-full rounded-xl border border-dashed border-[hsl(var(--gray-line))] py-2 text-xs text-muted-foreground hover:text-foreground hover:border-[hsl(var(--orange))] transition-colors"
+                    >
+                      +{logs.length - 4} more → View all
+                    </button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
+
+        <AnimateOnScroll animation="fade-left" delay={0.2} className="h-full">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <ChartPie className="h-4 w-4 text-[hsl(var(--saffron))]" /> This
+                  week
                 </span>
+                <Badge variant="outline" className="font-normal text-xs">
+                  avg {avgWeekly} kcal
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent  className="flex flex-col flex-1">
+              {weekLoading ? (
+                <Skeleton className="h-44 w-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height={176}>
+                  <BarChart
+                    data={weekData}
+                    margin={{ top: 4, right: 0, left: -28, bottom: 0 }}
+                  >
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10 }}
+                      tickFormatter={(v) =>
+                        new Date(v).toLocaleDateString("en", { weekday: "short" })
+                      }
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      formatter={(v: number) => [`${v} kcal`, ""]}
+                      labelFormatter={(l) =>
+                        new Date(l).toLocaleDateString("en", {
+                          weekday: "long",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      }
+                      contentStyle={{ borderRadius: 10, fontSize: 12 }}
+                    />
+                    <Bar dataKey="calories" radius={[6, 6, 0, 0]}>
+                      {weekData.map((entry) => (
+                        <Cell
+                          key={entry.date}
+                          fill={
+                            entry.date === todayIso
+                              ? "hsl(var(--saffron))"
+                              : "hsl(var(--saffron-light))"
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Today vs goal</span>
+                  <span>
+                    {todayBar} / {goal} kcal
+                  </span>
+                </div>
+                <ProgressBar
+                  value={Math.min(100, (todayBar / goal) * 100)}
+                  className="h-1.5"
+                />
               </div>
-              <ProgressBar
-                value={Math.min(100, (todayBar / goal) * 100)}
-                className="h-1.5"
-              />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
       </div>
 
       {/* ── MEASUREMENTS + PROGRESS ──────────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Ruler className="h-4 w-4" /> Measurements
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMeasureOpen(true)}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" /> Update
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {profile.loading ? (
-              <Skeleton className="h-24 w-full" />
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {(
-                  [
-                    ["chest", "Chest", "cm"],
-                    ["waist", "Waist", "cm"],
-                    ["hips", "Hips", "cm"],
-                    ["arm", "Arm", "cm"],
-                    ["thigh", "Thigh", "cm"],
-                    ["bodyFat", "Body fat", "%"],
-                  ] as const
-                ).map(([k, l, u]) => (
-                  <div
-                    key={k}
-                    className="rounded-lg bg-[hsl(var(--gray-bg))] p-2 text-center"
-                  >
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                      {l}
-                    </div>
-                    <div className="font-syne font-bold text-sm mt-0.5">
-                      {(measurements as any)[k] != null
-                        ? `${(measurements as any)[k]}${u}`
-                        : "—"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="h-4 w-4 text-[hsl(var(--green-dark))]" />{" "}
-              Progress
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMeasureOpen(true)}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" /> Log
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {progress.loading ? (
-              <Skeleton className="h-24 w-full" />
-            ) : (progress.data ?? []).length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground text-sm">
-                <TrendingUp className="mx-auto h-6 w-6 mb-2 opacity-30" />
-                Log your weight to see progress.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {weightDelta !== null && (
-                  <div
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      weightDelta < 0
-                        ? "bg-green-50 text-green-700"
-                        : weightDelta > 0
-                          ? "bg-red-50 text-red-600"
-                          : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {weightDelta < 0 ? (
-                      <TrendingDown className="h-3 w-3" />
-                    ) : (
-                      <TrendingUp className="h-3 w-3" />
-                    )}
-                    {weightDelta > 0 ? "+" : ""}
-                    {weightDelta} kg overall
-                  </div>
-                )}
-                <div className="space-y-1.5">
-                  {(progress.data ?? []).slice(0, 4).map((p) => (
+  <AnimateOnScroll animation="fade-up" delay={0.1} className="h-full">
+    <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Ruler className="h-4 w-4" /> Measurements
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMeasureOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Update
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {profile.loading ? (
+                <Skeleton className="h-24 w-full" />
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      ["chest", "Chest", "cm"],
+                      ["waist", "Waist", "cm"],
+                      ["hips", "Hips", "cm"],
+                      ["arm", "Arm", "cm"],
+                      ["thigh", "Thigh", "cm"],
+                      ["bodyFat", "Body fat", "%"],
+                    ] as const
+                  ).map(([k, l, u]) => (
                     <div
-                      key={p.id}
-                      className="flex justify-between items-center text-sm"
+                      key={k}
+                      className="rounded-lg bg-[hsl(var(--gray-bg))] p-2 text-center"
                     >
-                      <span className="text-muted-foreground text-xs">
-                        {new Date(p.recordedAt).toLocaleDateString("en", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-20 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-[hsl(var(--green-dark))] transition-all"
-                            style={{
-                              width: goalWeight
-                                ? `${Math.min(100, Math.max(5, ((p.weight - goalWeight) / (Math.max(startWeight ?? p.weight, p.weight) - goalWeight || 1)) * 100))}%`
-                                : "50%",
-                            }}
-                          />
-                        </div>
-                        <span className="font-semibold tabular-nums">
-                          {p.weight} kg
-                        </span>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                        {l}
+                      </div>
+                      <div className="font-syne font-bold text-sm mt-0.5">
+                        {(measurements as any)[k] != null
+                          ? `${(measurements as any)[k]}${u}`
+                          : "—"}
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
+
+         <AnimateOnScroll animation="fade-up" delay={0.2} className="h-full">
+    <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="h-4 w-4 text-[hsl(var(--green-dark))]" />{" "}
+                Progress
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMeasureOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Log
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {progress.loading ? (
+                <Skeleton className="h-24 w-full" />
+              ) : (progress.data ?? []).length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  <TrendingUp className="mx-auto h-6 w-6 mb-2 opacity-30" />
+                  Log your weight to see progress.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {weightDelta !== null && (
+                    <div
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${weightDelta < 0
+                        ? "bg-green-50 text-green-700"
+                        : weightDelta > 0
+                          ? "bg-red-50 text-red-600"
+                          : "bg-muted text-muted-foreground"
+                        }`}
+                    >
+                      {weightDelta < 0 ? (
+                        <TrendingDown className="h-3 w-3" />
+                      ) : (
+                        <TrendingUp className="h-3 w-3" />
+                      )}
+                      {weightDelta > 0 ? "+" : ""}
+                      {weightDelta} kg overall
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    {(progress.data ?? []).slice(0, 4).map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex justify-between items-center text-sm"
+                      >
+                        <span className="text-muted-foreground text-xs">
+                          {new Date(p.recordedAt).toLocaleDateString("en", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-20 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-[hsl(var(--green-dark))] transition-all"
+                              style={{
+                                width: goalWeight
+                                  ? `${Math.min(100, Math.max(5, ((p.weight - goalWeight) / (Math.max(startWeight ?? p.weight, p.weight) - goalWeight || 1)) * 100))}%`
+                                  : "50%",
+                              }}
+                            />
+                          </div>
+                          <span className="font-semibold tabular-nums">
+                            {p.weight} kg
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
       </div>
 
       {/* ── UPGRADE BANNER (free plan only) ─────────────────────────────── */}
       {!packageInfo && (
-        <Card className="border-2 border-[hsl(var(--orange))] overflow-hidden relative">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-10"
-            style={{
-              background:
-                "linear-gradient(135deg, hsl(var(--orange)) 0%, hsl(var(--saffron)) 100%)",
-            }}
-          />
-          <CardContent className="relative flex flex-wrap items-center justify-between gap-3 p-4">
-            <div>
-              <div className="flex items-center gap-2 font-syne font-bold text-base">
-                <Trophy className="h-4 w-4 text-[hsl(var(--orange))]" /> Unlock
-                your full potential
+        <AnimateOnScroll animation="scale-in" delay={0.1}>
+          <Card className="border-2 border-[hsl(var(--orange))] overflow-hidden relative">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-10"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(var(--orange)) 0%, hsl(var(--saffron)) 100%)",
+              }}
+            />
+            <CardContent className="relative flex flex-wrap items-center justify-between gap-3 p-4">
+              <div>
+                <div className="flex items-center gap-2 font-syne font-bold text-base">
+                  <Trophy className="h-4 w-4 text-[hsl(var(--orange))]" /> Unlock
+                  your full potential
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Personalized meal plans, consultations & unlimited AI scans.
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Personalized meal plans, consultations & unlimited AI scans.
-              </p>
-            </div>
-            <Button
-              onClick={() => navigate("/patient/subscription")}
-              className="shrink-0"
-            >
-              Upgrade now →
-            </Button>
-          </CardContent>
-        </Card>
+              <Button
+                onClick={() => navigate("/patient/subscription")}
+                className="shrink-0"
+              >
+                Upgrade now →
+              </Button>
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
       )}
 
       <MeasurementsModal
@@ -756,14 +777,17 @@ function StatTile({
     orange: "bg-[hsl(var(--orange-20))] text-[hsl(var(--orange))]",
     saffron: "bg-[hsl(var(--saffron-light))] text-[hsl(var(--saffron))]",
   };
+  const numericValue = parseInt(value);
+  const isNumeric = !isNaN(numericValue) && value !== "—";
   return (
-    <Card
-      className={
+     <Card
+      className={cn(
+        "h-full min-h-[130px]",   // ← add these
         onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
-      }
+      )}
       onClick={onClick}
     >
-      <CardContent className="p-3.5">
+      <CardContent className="p-3.5 flex flex-col h-full">
         <div className="flex items-center gap-2 mb-2">
           <div
             className={`w-7 h-7 rounded-lg flex items-center justify-center ${bg[tone]}`}
@@ -774,9 +798,10 @@ function StatTile({
             {label}
           </span>
         </div>
+
         <div className="flex items-baseline gap-1">
           <span className="font-syne text-2xl font-extrabold leading-none">
-            {value}
+            {isNumeric ? <AnimatedCounter end={numericValue} duration={800} /> : value}
           </span>
           {unit && (
             <span className="text-xs text-muted-foreground">{unit}</span>
@@ -786,6 +811,7 @@ function StatTile({
         {typeof progress === "number" && (
           <ProgressBar value={progress} className="mt-2 h-1" />
         )}
+         <div className="flex-1" />
         {extra}
       </CardContent>
     </Card>

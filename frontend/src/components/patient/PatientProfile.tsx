@@ -27,9 +27,11 @@ import {
   Badge,
   Skeleton,
   Progress as ProgressBar,
+  Textarea,
 } from "@/components/ui";
 import { ProfileCard } from "@/components/ui/ProfileCard";
 
+// ─── Password strength helper (unchanged) ──────────────────
 function getPasswordStrength(password: string): { score: number; label: string } {
   let score = 0;
   if (password.length >= 8) score++;
@@ -40,7 +42,7 @@ function getPasswordStrength(password: string): { score: number; label: string }
   return { score, label: labels[Math.min(score, 4)] };
 }
 
-// Re‑use the exact calorie calculation logic from onboarding
+// ─── Calorie goal calculation (unchanged) ──────────────────
 function calculateDailyCalorieGoal(profile: Partial<TProfile>): number {
   const age = profile.age ?? 30;
   const weight = profile.weight ?? 70;
@@ -48,7 +50,6 @@ function calculateDailyCalorieGoal(profile: Partial<TProfile>): number {
   const activityLevel = profile.activityLevel ?? "moderate";
   const goals = profile.goals ?? [];
 
-  // BMR (Mifflin‑St Jeor for women – adjust if gender is ever added)
   let bmr = 10 * weight + 6.25 * height - 5 * age - 161;
   const activityFactors: Record<string, number> = {
     sedentary: 1.2,
@@ -64,12 +65,57 @@ function calculateDailyCalorieGoal(profile: Partial<TProfile>): number {
   return Math.round(Math.max(1200, adjusted));
 }
 
+// ─── Predefined options for select fields ──────────────────
+const GOAL_OPTIONS = [
+  { value: "weight-loss", label: "Weight loss" },
+  { value: "weight-gain", label: "Weight gain" },
+  { value: "muscle-gain", label: "Muscle gain" },
+  { value: "wellness", label: "General wellness" },
+  { value: "better-sleep", label: "Better sleep" },
+  { value: "stress-management", label: "Stress management" },
+];
+
+const ACTIVITY_LEVELS = [
+  { value: "sedentary", label: "Sedentary (office job, little exercise)" },
+  { value: "light", label: "Lightly active (light exercise 1-3 days/week)" },
+  { value: "moderate", label: "Moderately active (moderate exercise 3-5 days/week)" },
+  { value: "active", label: "Active (daily exercise or intense activity)" },
+  { value: "very_active", label: "Very active (hard exercise or physical job)" },
+];
+
+const DIETARY_PREFS = [
+  { value: "none", label: "No preference" },
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "vegan", label: "Vegan" },
+  { value: "keto", label: "Keto" },
+  { value: "paleo", label: "Paleo" },
+  { value: "mediterranean", label: "Mediterranean" },
+  { value: "low-carb", label: "Low carb" },
+  { value: "low-fat", label: "Low fat" },
+];
+
+const CAFFEINE_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "low", label: "Low (1 cup/day)" },
+  { value: "moderate", label: "Moderate (2-3 cups/day)" },
+  { value: "high", label: "High (4+ cups/day)" },
+];
+
+const MEALS_PER_DAY_OPTIONS = [
+  { value: "1-2", label: "1-2 meals" },
+  { value: "3", label: "3 meals" },
+  { value: "4", label: "4 meals" },
+  { value: "5-6", label: "5-6 small meals" },
+];
+
+// ─── Main Component ─────────────────────────────────────────
 export default function PatientProfile() {
   const profile = useAsync<TProfile>(() => getPatientProfile(), [], { toastOnError: false });
   const progress = useAsync<Progress[]>(() => getMyProgress(), [], { toastOnError: false });
   const [tab, setTab] = useState<"personal" | "health" | "security">("personal");
   const [draft, setDraft] = useState<Partial<TProfile>>({});
   const [allergyInput, setAllergyInput] = useState("");
+  const [conditionInput, setConditionInput] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -78,7 +124,6 @@ export default function PatientProfile() {
     }
   }, [profile.data]);
 
-  // Live recomputed goal based on current draft
   const recomputedGoal = useMemo(
     () => calculateDailyCalorieGoal(draft),
     [draft.age, draft.weight, draft.height, draft.activityLevel, draft.goals]
@@ -88,7 +133,6 @@ export default function PatientProfile() {
     setSaving(true);
     try {
       const { fullName, email, phone, ...patientData } = draft;
-      // Send the freshly computed calorie goal
       const payload = {
         ...patientData,
         dailyCalorieGoal: recomputedGoal,
@@ -135,6 +179,25 @@ export default function PatientProfile() {
     );
   }
 
+  // Helper to add/remove items in arrays
+  const addCondition = () => {
+    if (conditionInput.trim() && !(draft.conditions ?? []).includes(conditionInput.trim())) {
+      setDraft({ ...draft, conditions: [...(draft.conditions ?? []), conditionInput.trim()] });
+      setConditionInput("");
+    }
+  };
+  const removeCondition = (cond: string) => {
+    setDraft({ ...draft, conditions: (draft.conditions ?? []).filter(c => c !== cond) });
+  };
+
+  const toggleGoal = (goalValue: string) => {
+    const current = draft.goals ?? [];
+    const updated = current.includes(goalValue)
+      ? current.filter(g => g !== goalValue)
+      : [...current, goalValue];
+    setDraft({ ...draft, goals: updated });
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       <ProfileCard
@@ -151,7 +214,7 @@ export default function PatientProfile() {
               <UserIcon className="h-4 w-4" /> Personal
             </TabsTrigger>
             <TabsTrigger value="health" className="gap-2">
-              <ShieldCheck className="h-4 w-4" /> Health
+              <ShieldCheck className="h-4 w-4" /> Health & Lifestyle
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-2">
               <KeyRound className="h-4 w-4" /> Security
@@ -160,12 +223,7 @@ export default function PatientProfile() {
 
           {/* Personal Information Tab */}
           <TabsContent value="personal">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                save();
-              }}
-            >
+            <form onSubmit={(e) => { e.preventDefault(); save(); }}>
               <Card>
                 <CardHeader>
                   <CardTitle>Personal Information</CardTitle>
@@ -205,73 +263,68 @@ export default function PatientProfile() {
                   </div>
                 </CardContent>
                 <CardFooter className="justify-end">
-                  <Button type="submit" disabled={saving}>
-                    {saving ? "Saving…" : "Save changes"}
-                  </Button>
+                  <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
                 </CardFooter>
               </Card>
             </form>
           </TabsContent>
 
-          {/* Health & Goals Tab – now with dynamic calorie goal display */}
+          {/* Health & Lifestyle Tab (expanded) */}
           <TabsContent value="health">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                save();
-              }}
-            >
+            <form onSubmit={(e) => { e.preventDefault(); save(); }}>
               <Card>
                 <CardHeader>
-                  <CardTitle>Health & Goals</CardTitle>
+                  <CardTitle>Health & Lifestyle</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Height (cm)</Label>
-                      <Input
-                        type="number"
-                        value={draft.height ?? ""}
-                        onChange={(e) => setDraft({ ...draft, height: e.target.value ? Number(e.target.value) : undefined })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Weight (kg)</Label>
-                      <Input
-                        type="number"
-                        value={draft.weight ?? ""}
-                        onChange={(e) => setDraft({ ...draft, weight: e.target.value ? Number(e.target.value) : undefined })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Goal weight (kg)</Label>
-                      <Input
-                        type="number"
-                        value={draft.goalWeight ?? ""}
-                        onChange={(e) => setDraft({ ...draft, goalWeight: e.target.value ? Number(e.target.value) : undefined })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Activity level</Label>
-                      <Select
-                        value={draft.activityLevel ?? ""}
-                        onValueChange={(val) => setDraft({ ...draft, activityLevel: val as TProfile["activityLevel"] })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select activity level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sedentary">Sedentary</SelectItem>
-                          <SelectItem value="light">Lightly active</SelectItem>
-                          <SelectItem value="moderate">Moderately active</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="very_active">Very active</SelectItem>
-                        </SelectContent>
-                      </Select>
+                <CardContent className="space-y-6">
+                  {/* ── Body metrics ── */}
+                  <div className="space-y-3">
+                    <h3 className="text-md font-medium">Body measurements</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Height (cm)</Label>
+                        <Input
+                          type="number"
+                          value={draft.height ?? ""}
+                          onChange={(e) => setDraft({ ...draft, height: e.target.value ? Number(e.target.value) : undefined })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Weight (kg)</Label>
+                        <Input
+                          type="number"
+                          value={draft.weight ?? ""}
+                          onChange={(e) => setDraft({ ...draft, weight: e.target.value ? Number(e.target.value) : undefined })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Goal weight (kg)</Label>
+                        <Input
+                          type="number"
+                          value={draft.goalWeight ?? ""}
+                          onChange={(e) => setDraft({ ...draft, goalWeight: e.target.value ? Number(e.target.value) : undefined })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Activity level</Label>
+                        <Select
+                          value={draft.activityLevel ?? ""}
+                          onValueChange={(val) => setDraft({ ...draft, activityLevel: val as TProfile["activityLevel"] })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select activity level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ACTIVITY_LEVELS.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Display the recalculated calorie goal – live preview */}
+                  {/* ── Calorie goal preview ── */}
                   <div className="space-y-2">
                     <Label>Recommended daily calorie goal</Label>
                     <div className="rounded-lg border border-border bg-primary/10 px-4 py-2 text-sm font-medium">
@@ -279,63 +332,183 @@ export default function PatientProfile() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Automatically updated based on your age, weight, height, activity level, and goals.
-                      Changes will be saved when you click "Save changes".
                     </p>
                   </div>
 
-                  {/* Allergies – unchanged */}
-                  <div className="space-y-2">
-                    <Label>Allergies</Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {(draft.allergies ?? []).map((a) => (
-                        <Badge key={a} variant="secondary" className="gap-1">
-                          {a}
-                          <X
-                            size={12}
-                            className="cursor-pointer"
-                            onClick={() =>
-                              setDraft({
-                                ...draft,
-                                allergies: (draft.allergies ?? []).filter((x) => x !== a),
-                              })
-                            }
+                  {/* ── Medical info ── */}
+                  <div className="space-y-3">
+                    <h3 className="text-md font-medium">Medical & health profile</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Medical history</Label>
+                        <Textarea
+                          value={draft.medicalHistory ?? ""}
+                          onChange={(e) => setDraft({ ...draft, medicalHistory: e.target.value })}
+                          placeholder="e.g., hypertension, diabetes, previous surgeries…"
+                          rows={2}
+                        />
+                      </div>
+
+                      {/* Conditions as tags */}
+                      <div className="space-y-2">
+                        <Label>Health conditions</Label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {(draft.conditions ?? []).map(cond => (
+                            <Badge key={cond} variant="secondary" className="gap-1">
+                              {cond}
+                              <X size={12} className="cursor-pointer" onClick={() => removeCondition(cond)} />
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            value={conditionInput}
+                            onChange={(e) => setConditionInput(e.target.value)}
+                            placeholder="e.g., PCOS, High cholesterol"
                           />
-                        </Badge>
-                      ))}
+                          <Button type="button" variant="outline" onClick={addCondition}>Add</Button>
+                        </div>
+                      </div>
+
+                      {/* Goals (multi-select with checkboxes / pills) */}
+                      <div className="space-y-2">
+                        <Label>Wellness goals</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {GOAL_OPTIONS.map(opt => (
+                            <Badge
+                              key={opt.value}
+                              variant={(draft.goals ?? []).includes(opt.value) ? "default" : "outline"}
+                              className="cursor-pointer"
+                              onClick={() => toggleGoal(opt.value)}
+                            >
+                              {opt.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Allergies (existing) */}
+                      <div className="space-y-2">
+                        <Label>Allergies</Label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {(draft.allergies ?? []).map(a => (
+                            <Badge key={a} variant="secondary" className="gap-1">
+                              {a}
+                              <X size={12} className="cursor-pointer" onClick={() => setDraft({ ...draft, allergies: (draft.allergies ?? []).filter(x => x !== a) })} />
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            value={allergyInput}
+                            onChange={(e) => setAllergyInput(e.target.value)}
+                            placeholder="e.g., peanuts, gluten"
+                          />
+                          <Button type="button" variant="outline" onClick={() => {
+                            if (allergyInput.trim()) {
+                              setDraft({ ...draft, allergies: [...(draft.allergies ?? []), allergyInput.trim()] });
+                              setAllergyInput("");
+                            }
+                          }}>Add</Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={allergyInput}
-                        onChange={(e) => setAllergyInput(e.target.value)}
-                        placeholder="e.g., peanuts, dairy"
+                  </div>
+
+                  {/* ── Lifestyle ── */}
+                  <div className="space-y-3">
+                    <h3 className="text-md font-medium">Lifestyle & habits</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Dietary preference</Label>
+                        <Select
+                          value={draft.dietaryPref ?? "none"}
+                          onValueChange={(val) => setDraft({ ...draft, dietaryPref: val })}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {DIETARY_PREFS.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Water intake (glasses/day)</Label>
+                        <Input
+                          type="number"
+                          value={draft.waterIntake ?? ""}
+                          onChange={(e) => setDraft({ ...draft, waterIntake: e.target.value ? Number(e.target.value) : undefined })}
+                          placeholder="e.g., 6"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Sleep (hours/night)</Label>
+                        <Input
+                          type="number"
+                          step="0.5"
+                          value={draft.sleepHours ?? ""}
+                          onChange={(e) => setDraft({ ...draft, sleepHours: e.target.value ? Number(e.target.value) : undefined })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Meals per day</Label>
+                        <Select
+                          value={draft.mealsPerDay ?? ""}
+                          onValueChange={(val) => setDraft({ ...draft, mealsPerDay: val })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {MEALS_PER_DAY_OPTIONS.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Caffeine consumption</Label>
+                        <Select
+                          value={draft.caffeine ?? "none"}
+                          onValueChange={(val) => setDraft({ ...draft, caffeine: val })}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {CAFFEINE_OPTIONS.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Biggest challenges</Label>
+                      <Textarea
+                        value={draft.challenges ?? ""}
+                        onChange={(e) => setDraft({ ...draft, challenges: e.target.value })}
+                        placeholder="What makes it hard to eat healthy?"
+                        rows={2}
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          if (allergyInput.trim()) {
-                            setDraft({
-                              ...draft,
-                              allergies: [...(draft.allergies ?? []), allergyInput.trim()],
-                            });
-                            setAllergyInput("");
-                          }
-                        }}
-                      >
-                        Add
-                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>What motivates you?</Label>
+                      <Textarea
+                        value={draft.motivation ?? ""}
+                        onChange={(e) => setDraft({ ...draft, motivation: e.target.value })}
+                        placeholder="e.g., more energy, better health, fitting into clothes..."
+                        rows={2}
+                      />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="justify-end">
-                  <Button type="submit" disabled={saving}>
-                    {saving ? "Saving…" : "Save changes"}
-                  </Button>
+                  <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
                 </CardFooter>
               </Card>
             </form>
           </TabsContent>
 
+          {/* Security Tab (unchanged) */}
           <TabsContent value="security">
             <SecurityPanel />
           </TabsContent>
@@ -345,7 +518,7 @@ export default function PatientProfile() {
   );
 }
 
-// Security panel unchanged (same as before)
+// Security panel (unchanged)
 function SecurityPanel() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -389,19 +562,11 @@ function SecurityPanel() {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label>Current Password</Label>
-          <Input
-            type="password"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-          />
+          <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} />
         </div>
         <div className="space-y-2">
           <Label>New Password</Label>
-          <Input
-            type="password"
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-          />
+          <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} />
           {next && (
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
@@ -419,20 +584,12 @@ function SecurityPanel() {
         </div>
         <div className="space-y-2">
           <Label>Confirm New Password</Label>
-          <Input
-            type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-          {confirm && next !== confirm && (
-            <p className="text-xs text-destructive">Passwords do not match</p>
-          )}
+          <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          {confirm && next !== confirm && <p className="text-xs text-destructive">Passwords do not match</p>}
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={submit} disabled={saving}>
-          {saving ? "Updating…" : "Change Password"}
-        </Button>
+        <Button onClick={submit} disabled={saving}>{saving ? "Updating…" : "Change Password"}</Button>
       </CardFooter>
     </Card>
   );

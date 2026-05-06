@@ -28,3 +28,9 @@ export const getPackages = async (): Promise<Package[]> => {
 export const getMySubscription = () => apiFetch<Subscription>('/subscriptions/my');
 export const createSubscription = (packageId: string) =>
   apiFetch<{ subscriptionId: string }>('/subscriptions', { method: 'POST', body: JSON.stringify({ packageId: parseInt(packageId) }) });
+
+
+export const cancelSubscription = (subscriptionId: number) =>
+  apiFetch<{ success: boolean; message: string }>(`/subscriptions/${subscriptionId}/cancel`, {
+    method: 'PUT',
+  });

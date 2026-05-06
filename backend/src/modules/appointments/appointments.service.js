@@ -70,10 +70,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
       data: { isBooked: true },
     });
 
-    // 6. After transaction commit, send notifications & email (not critical)
-    //    We defer them to keep the transaction short.
-    //    However, the transaction is already committed, so we can call them outside.
-    //    We'll use setTimeout to avoid delaying the response, but simple async is fine.
+    // 6. After transaction commit, send notifications & email 
     (async () => {
       try {
         const nutritionistUserId = appointment.nutritionist.user.id;

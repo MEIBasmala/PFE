@@ -5,7 +5,7 @@ import { getBlogArticles } from "@/services/api";
 import { formatShortDate } from "@/lib/date";
 import { apiCache } from "@/lib/apiCache";
 import type { BlogArticle } from "@/types/api";
-
+import AnimateOnScroll, { StaggerContainer } from "@/components/ui/AnimateOnScroll";
 import {
   Card,
   CardContent,
@@ -186,17 +186,17 @@ export default function PatientBlog() {
       <div className="w-full max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 ">
 
         {/* Header */}
-        <div className="mb-4 md:mb-8 text-center">
-          <div className="inline-flex items-center justify-center gap-2 mb-2">
+        
+<AnimateOnScroll animation="fade-down">
+  <div className="mb-4 md:mb-8 text-center">          <div className="inline-flex items-center justify-center gap-2 mb-2">
             <Newspaper size={28} className="text-primary" />
-            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight font-syne">
-              Nutrition &amp; Wellness Blog
-            </h1>
-          </div>
+            
           <p className="text-xs sm:text-base md:text-lg text-muted-foreground mt-1">
             Expert advice &amp; healthy recipes curated by our nutritionists
           </p>
+          </div>
         </div>
+        </AnimateOnScroll>
 
         {/* Search — mobile only */}
         <div className="relative mb-3 lg:hidden">
@@ -217,8 +217,7 @@ export default function PatientBlog() {
               <button
                 key={c.value}
                 onClick={() => setCategory(c.value)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200
-                  ${category === c.value
+className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 btn-press                  ${category === c.value
                     ? "bg-primary text-primary-foreground border-primary shadow-md"
                     : "bg-background text-foreground border-border hover:bg-muted hover:-translate-y-0.5"
                   }`}
@@ -260,7 +259,7 @@ export default function PatientBlog() {
               <>
                 {/* Featured card */}
                 {featured && (
-                  <Card className="overflow-hidden group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <Card className="overflow-hidden group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg card-tilt">
                     <div className="flex flex-col sm:flex-row gap-0 sm:gap-5 sm:p-5 md:gap-6 md:p-6">
                       <div className="w-full sm:w-40 sm:shrink-0 md:w-48">
                         <div className="w-full h-44 sm:h-36 sm:w-40 md:h-44 md:w-48 sm:rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-500">

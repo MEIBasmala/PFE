@@ -5,7 +5,7 @@ export const ADMIN_NAV = [
     title: "Main",
     items: [
       { id: "dashboard", path: "/admin", label: "Dashboard", icon: "dashboard" },        // ✅ FA alias for tachometer-alt
-      { id: "analytics", path: "/admin/analytics", label: "Analytics", icon: "chart-line" }, // ✅ line chart
+      { id: "analytics", path: "/admin/analytics", label: "Chatbot Analytics", icon: "chart-line" }, // ✅ line chart
     ],
   },
   {

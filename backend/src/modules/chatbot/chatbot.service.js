@@ -245,6 +245,13 @@ const chat = async (userId, message, history = [], res) => {
   const startTime = Date.now();
   const intent = detectIntent(message);
 
+  const pkg = await getPatientPackage(patient.id);
+  if (!pkg || !pkg.chatbot) {
+    res.write(`data: ${JSON.stringify({ error: 'Chatbot not included in your current plan. Upgrade to unlock.' })}\n\n`);
+    res.end();
+    return;
+  }
+  
   log('start', { userId, intent, messageLength: message.length });
 
   // SSE headers
@@ -268,6 +275,8 @@ const chat = async (userId, message, history = [], res) => {
       res.end();
       return;
     }
+
+
   }
 
   //  Get Context
@@ -424,6 +433,7 @@ const getChatHistory = async (userId, page = 1, limit = 20) => {
   };
 };
 
+
 //  Get Chatbot Statistics (Admin) 
 const getChatbotStats = async () => {
   const [
@@ -487,6 +497,8 @@ const getChatbotStats = async () => {
     }),
   ]);
 
+
+
   return {
     overview: {
       totalMessages,
@@ -527,4 +539,12 @@ const getChatbotStats = async () => {
   };
 };
 
-module.exports = { chat, getChatHistory, getChatbotStats };
+const getPatientPackage = async (patientId) => {
+  const sub = await prisma.subscription.findFirst({
+    where: { patientId, status: 'ACTIVE' },
+    include: { package: true },
+  });
+  return sub?.package ?? null;
+};
+
+module.exports = { chat, getChatHistory, getChatbotStats, getPatientPackage };

@@ -36,7 +36,7 @@ const AdminPatients = () => {
       const res = await api.get<{ success: boolean; patients: Patient[] }>('/admin/patients');
       setPatients(res.patients);
     } catch {
-      toast.error('Failed to load patients');
+      toast.error('Failed to load Clients');
     } finally {
       setLoading(false);
     }

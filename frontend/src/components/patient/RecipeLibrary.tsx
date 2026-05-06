@@ -139,13 +139,11 @@ export default function RecipeLibrary() {
         <div className="mb-4 md:mb-8 text-center">
           <div className="inline-flex items-center justify-center gap-2 mb-2">
             <Utensils size={28} className="text-primary" />
-            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight font-syne">
-              Recipe Library
-            </h1>
-          </div>
+            
           <p className="text-xs sm:text-base md:text-lg text-muted-foreground mt-1">
             Discover healthy meals curated by our nutritionists
           </p>
+        </div>
         </div>
 
         {/* Search — mobile only */}

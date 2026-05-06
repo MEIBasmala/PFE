@@ -261,19 +261,17 @@ export default function PatientMealPlan() {
     <div className="w-full min-h-screen overflow-x-hidden">
       <div className="w-full max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6">
 
-        {/* Header — unified with Blog/Recipe pattern */}
         <div className="mb-4 md:mb-8 text-center">
           <div className="inline-flex items-center justify-center gap-2 mb-2">
             <ChefHat size={28} className="text-primary" />
-            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight font-syne">
-              Meal Plans
-            </h1>
-          </div>
+           
+          
           <p className="text-xs sm:text-base md:text-lg text-muted-foreground mt-1">
             {mode === "prebuilt" 
               ? "Browse pre-built nutrition plans curated by our experts"
               : "Your personalized meal plan from your nutritionist"}
           </p>
+          </div>
         </div>
 
         {/* Search — mobile only */}

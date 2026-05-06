@@ -1,5 +1,4 @@
 // src/components/nutritionist/NutritionistMealPlans.tsx
-// Flow: Pick patient → pick dates → assign recipes from your library to meal slots
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { nutritionistMealPlansApi, nutritionistPatientsApi, nutritionistRecipesApi } from "@/services/api";
