@@ -1,0 +1,218 @@
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+
+// Helper to build the features array from a plan object
+function buildFeatures(plan, isSeasonal = false) {
+  const features = [];
+
+  // AI scans
+  features.push(`${plan.aiScansPerDay} AI scan${plan.aiScansPerDay !== 1 ? 's' : ''} per day`);
+
+  // Consultations
+  if (plan.consultationsPerMonth > 0) {
+    features.push(`${plan.consultationsPerMonth} consultation${plan.consultationsPerMonth !== 1 ? 's' : ''} per month`);
+  } else {
+    features.push('No consultations');
+  }
+
+  // Meal plan type
+  if (plan.mealPlanType) {
+    features.push(plan.mealPlanType + 'meal plan');
+  }
+
+  // Recipe library
+  if (plan.recipeLibrary) features.push('Full recipe library');
+
+  // Food diary
+  if (plan.foodDiary) features.push('Food diary & tracking');
+
+  // Chatbot
+  if (plan.chatbot) features.push('AI chatbot assistant');
+
+  // For seasonal plans, add duration as a feature
+  if (isSeasonal && plan.duration) {
+    features.push(`Valid for ${plan.duration}`);
+  }
+
+  return features;
+}
+
+async function main() {
+  console.log('🌱 Seeding packages...');
+
+  // =========================
+  // 1. Regular plans (from planLimits)
+  // =========================
+  const regularPlans = [
+    {
+      id: "starter",
+      name: "Starter",
+      priceMonthly: 0,
+      priceYearly: 0,
+      aiScansPerDay: 2,
+      consultationsPerMonth: 0,
+      mealPlanType: "Pre-built",
+      recipeLibrary: false,
+      foodDiary: true,
+      chatbot: false,
+    },
+    {
+      id: "basic",
+      name: "Basic",
+      priceMonthly: 3900,
+      priceYearly: 39000,
+      aiScansPerDay: 10,
+      consultationsPerMonth: 1,
+      mealPlanType: "Pre-built",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: false,
+    },
+    {
+      id: "premium",
+      name: "Premium",
+      priceMonthly: 6900,
+      priceYearly: 69000,
+      aiScansPerDay: 999,
+      consultationsPerMonth: 2,
+      mealPlanType: "Personalised",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: true,
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      priceMonthly: 18000,
+      priceYearly: 180000,
+      aiScansPerDay: 999,
+      consultationsPerMonth: 6,
+      mealPlanType: "Advanced personalised ",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: true,
+    },
+    {
+      id: "elite",
+      name: "Elite",
+      priceMonthly: 25000,
+      priceYearly: 250000,
+      aiScansPerDay: 999,
+      consultationsPerMonth: 12,
+      mealPlanType: "Ultimate custom (DNA / labs optional)",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: true,
+    },
+  ];
+
+  for (const p of regularPlans) {
+    const features = buildFeatures(p, false);
+    await prisma.package.upsert({
+      where: { name: p.name },
+      update: {},
+      create: {
+        name: p.name,
+        tier: p.id,
+        priceMonthly: p.priceMonthly,
+        priceYearly: p.priceYearly,
+        aiScansPerDay: p.aiScansPerDay,
+        consultationsPerMonth: p.consultationsPerMonth,
+        chatbot: p.chatbot,
+        mealPlanType: p.mealPlanType,
+        highlight: p.id === 'premium',
+        isSeasonal: false,
+        features,
+      },
+    });
+    console.log(`✅ Regular plan: ${p.name}`);
+  }
+
+  // =========================
+  // 2. Seasonal plans (from seasonalPlans)
+  // =========================
+  const seasonalPlans = [
+    {
+      id: "ramadan",
+      name: "Ramadan Reset",
+      price: 10000,
+      duration: "30 days",
+      aiScansPerDay: 30,
+      consultationsPerMonth: 4,
+      mealPlanType: "Personalised (pre-dawn & post-sunset meals)",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: true,
+    },
+    {
+      id: "winter-arc",
+      name: "Winter Arc",
+      price: 12000,
+      duration: "8 weeks",
+      aiScansPerDay: 20,
+      consultationsPerMonth: 6,
+      mealPlanType: "Personalised (warm, immune-boosting)",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: true,
+    },
+    {
+      id: "summer",
+      name: "Summer Shred",
+      price: 20000,
+      duration: "12 weeks",
+      aiScansPerDay: 50,
+      consultationsPerMonth: 8,
+      mealPlanType: "Advanced personalised (low-calorie, high-protein)",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: true,
+    },
+    {
+      id: "spring-detox",
+      name: "Spring Detox",
+      price: 9900,
+      duration: "4 weeks",
+      aiScansPerDay: 15,
+      consultationsPerMonth: 2,
+      mealPlanType: "Personalised (detox & anti-inflammatory)",
+      recipeLibrary: true,
+      foodDiary: true,
+      chatbot: true,
+    },
+  ];
+
+  for (const s of seasonalPlans) {
+    const features = buildFeatures(s, true);
+    await prisma.package.upsert({
+      where: { name: s.name },
+      update: {},
+      create: {
+        name: s.name,
+        tier: s.id,
+        price: s.price,
+        duration: s.duration,
+        aiScansPerDay: s.aiScansPerDay,
+        consultationsPerMonth: s.consultationsPerMonth,
+        chatbot: s.chatbot,
+        mealPlanType: s.mealPlanType,
+        highlight: false,
+        isSeasonal: true,
+        features,
+      },
+    });
+    console.log(`✅ Seasonal plan: ${s.name}`);
+  }
+
+  console.log('🎉 Seeding finished.');
+}
+
+main()
+  .catch(e => {
+    console.error('❌ Seeding failed:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

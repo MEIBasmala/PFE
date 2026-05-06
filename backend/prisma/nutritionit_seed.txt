@@ -1,0 +1,60 @@
+// prisma/seed.js
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+const prisma = new PrismaClient();
+
+async function main() {
+  // 1. Admin user
+  const adminEmail = 'admin@khabirlens.com';
+  let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (!admin) {
+    const hashedPassword = await bcrypt.hash('Admin123!', 10);
+    admin = await prisma.user.create({
+      data: {
+        fullName: 'Admin User',
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'ADMIN',
+        isActive: true,
+        admin: { create: {} }, // creates Admin profile
+      },
+    });
+    console.log(`✅ Admin created: ${admin.email}`);
+  } else {
+    console.log(`ℹ️ Admin already exists: ${admin.email}`);
+  }
+
+  // 2. Nutritionist user
+  const nutritionistEmail = 'nutritionist@khabirlens.com';
+  let nutritionistUser = await prisma.user.findUnique({ where: { email: nutritionistEmail } });
+  if (!nutritionistUser) {
+    const hashedPassword = await bcrypt.hash('Nutritionist123!', 10);
+    nutritionistUser = await prisma.user.create({
+      data: {
+        fullName: 'Jane Nutritionist',
+        email: nutritionistEmail,
+        password: hashedPassword,
+        role: 'NUTRITIONIST',
+        isActive: true,
+        nutritionist: {
+          create: {
+            specialization: 'Weight Management & Sports Nutrition',
+            bio: 'Experienced nutritionist helping clients achieve their health goals.',
+          },
+        },
+      },
+    });
+    console.log(`✅ Nutritionist created: ${nutritionistUser.email}`);
+  } else {
+    console.log(`ℹ️ Nutritionist already exists: ${nutritionistUser.email}`);
+  }
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Seeding error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

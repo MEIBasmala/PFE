@@ -1,0 +1,274 @@
+/* ===== HOMEPAGE-SPECIFIC STYLES ===== */
+/* Note: Cards, buttons, tables, tags, forms, modals, and skeletons
+   are now handled by @/components/ui primitives. Only homepage-unique
+   layout and section styles live here. */
+
+/* ─── Blog Section ─── */
+.blog-section {
+  padding: 6rem 6%;
+}
+
+.home-blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.75rem;
+  margin-top: 3rem;
+}
+
+@media (max-width: 1024px) { .home-blog-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px)  { .home-blog-grid { grid-template-columns: 1fr; } }
+
+.blog-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--gray-line));
+  transition: all 0.35s;
+  position: relative;
+}
+.blog-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--hover-shadow);
+}
+
+.lock-overlay-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  z-index: 2;
+}
+
+.blog-card-img {
+  height: 160px;
+  background: linear-gradient(135deg, hsl(var(--green-light)), hsl(var(--saffron-light)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.blog-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.blog-card-content { padding: 1.5rem; }
+.blog-card-tag {
+  display: inline-block;
+  background: hsl(var(--green-light));
+  color: hsl(var(--green-dark));
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.75rem;
+  border-radius: 50px;
+  margin-bottom: 0.75rem;
+}
+.blog-card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.blog-card-excerpt {
+  font-size: 0.8rem;
+  color: hsl(var(--text-m));
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+.blog-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: hsl(var(--text-m));
+  margin-bottom: 0.75rem;
+}
+.blog-card-actions {
+  display: flex;
+  gap: 1rem;
+  border-top: 1px solid hsl(var(--gray-line));
+  padding-top: 0.75rem;
+}
+.blog-card-actions button {
+  background: none;
+  border: none;
+  font-size: 0.7rem;
+  color: hsl(var(--text-m));
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.blog-card-actions button:hover { color: hsl(var(--orange)); }
+
+/* ─── Pricing Cards ─── */
+.pricing-card-sm {
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(4px);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  position: relative;
+}
+.pricing-card-sm:hover {
+  transform: translateY(-0.25rem);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+.pricing-card-sm.featured-sm {
+  background: rgba(194,230,110,0.25);
+  border: 1px solid hsl(var(--green));
+}
+
+/* ─── Section Common Tags ─── */
+.section-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: hsl(var(--green-dark));
+  display: block;
+  margin-bottom: 1rem;
+}
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+.section-sub {
+  color: hsl(var(--text-m));
+  max-width: 600px;
+  line-height: 1.7;
+}
+
+/* ─── Styled Emoji Container ─── */
+.styled-emoji {
+  background: hsl(var(--green-light));
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ─── Button Outline (homepage CTA) ─── */
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid hsl(var(--green));
+  color: hsl(var(--green-dark));
+  padding: 0.4rem 1rem;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-outline:hover {
+  background: hsl(var(--green-light));
+}
+
+/* ─── Contact Form (used in Contact.tsx) ─── */
+.contact-support-wrapper {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+.contact-support-card {
+  background: hsl(var(--pure-white));
+  border-radius: var(--rl);
+  border: 1px solid hsl(var(--gray-line));
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s;
+}
+.contact-support-card:hover {
+  box-shadow: var(--hover-shadow);
+}
+.contact-support-card .card-head {
+  background: hsl(var(--gray-bg));
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid hsl(var(--gray-line));
+  margin-bottom: 0;
+}
+.contact-support-card .card-head .card-title {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.contact-support-card .card-head .card-title i {
+  color: hsl(var(--orange));
+  font-size: 1.3rem;
+}
+.contact-support-form {
+  padding: 1.8rem 1.5rem;
+}
+.contact-support-form .form-group {
+  margin-bottom: 1.4rem;
+}
+.contact-support-form label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: hsl(var(--text-m));
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.contact-support-form input,
+.contact-support-form textarea {
+  width: 100%;
+  background: hsl(var(--cream-bg));
+  border: 1.5px solid hsl(var(--gray-line));
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  color: hsl(var(--text-dark));
+  transition: all 0.2s;
+}
+.contact-support-form input:focus,
+.contact-support-form textarea:focus {
+  outline: none;
+  border-color: hsl(var(--orange));
+  box-shadow: 0 0 0 3px hsl(var(--orange-20));
+}
+.contact-support-form textarea {
+  resize: vertical;
+  min-height: 130px;
+}
+.contact-support-form .btn-orange {
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.contact-support-info {
+  background: hsl(var(--saffron-light));
+  border-radius: 12px;
+  padding: 0.9rem 1.2rem;
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: #8a6200;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid hsl(var(--saffron));
+}

@@ -1,0 +1,129 @@
+Folder PATH listing
+Volume serial number is F0BC-2CFB
+D:.
+|   .gitignore
+|   package-lock.json
+|   package.json
+|   prisma.config.ts
+|   README.md
+|   structure.txt
+|   
++---prisma
+|   |   schema.prisma
+|   |   
+|   \---migrations
+|       |   migration_lock.toml
+|       |   
+|       +---20260305151313_init
+|       |       migration.sql
+|       |       
+|       \---20260305233707_add_reset_token
+|               migration.sql
+|               
+\---src
+    |   server.js
+    |   
+    +---config
+    |       db.js
+    |       email.js
+    |       
+    +---middleware
+    |       auth.js
+    |       
+    \---modules
+        +---admin
+        |       admin.controller.js
+        |       admin.repository.js
+        |       admin.routes.js
+        |       admin.service.js
+        |       
+        +---appointments
+        |       appointments.controller.js
+        |       appointments.repository.js
+        |       appointments.routes.js
+        |       appointments.service.js
+        |       appointments.validation.js
+        |       
+        +---auth
+        |       auth.controller.js
+        |       auth.repository.js
+        |       auth.routes.js
+        |       auth.service.js
+        |       auth.validation.js
+        |       
+        +---blog
+        |       blog.controller.js
+        |       blog.repository.js
+        |       blog.routes.js
+        |       blog.service.js
+        |       blog.validation.js
+        |       
+        +---food-logs
+        |       food-logs.controller.js
+        |       food-logs.repository.js
+        |       food-logs.routes.js
+        |       food-logs.service.js
+        |       food-logs.validation.js
+        |       
+        +---inquiries
+        |       inquiries.controller.js
+        |       inquiries.repository.js
+        |       inquiries.routes.js
+        |       inquiries.service.js
+        |       inquiries.validation.js
+        |       
+        +---messages
+        |       messages.controller.js
+        |       messages.repository.js
+        |       messages.routes.js
+        |       messages.service.js
+        |       messages.validation.js
+        |       
+        +---notifications
+        |       notifications.controller.js
+        |       notifications.repository.js
+        |       notifications.routes.js
+        |       notifications.service.js
+        |       
+        +---nutrition-plans
+        |       plans.controller.js
+        |       plans.repository.js
+        |       plans.routes.js
+        |       plans.service.js
+        |       plans.validation.js
+        |       
+        +---payments
+        |       payments.controller.js
+        |       payments.repository.js
+        |       payments.routes.js
+        |       payments.service.js
+        |       payments.validation.js
+        |       
+        +---progress
+        |       progress.controller.js
+        |       progress.repository.js
+        |       progress.routes.js
+        |       progress.service.js
+        |       progress.validation.js
+        |       
+        +---slots
+        |       slots.controller.js
+        |       slots.repository.js
+        |       slots.routes.js
+        |       slots.service.js
+        |       slots.validation.js
+        |       
+        +---subscriptions
+        |       subscriptions.controller.js
+        |       subscriptions.repository.js
+        |       subscriptions.routes.js
+        |       subscriptions.service.js
+        |       subscriptions.validation.js
+        |       
+        \---users
+                users.controller.js
+                users.repository.js
+                users.routes.js
+                users.service.js
+                users.validation.js
+                

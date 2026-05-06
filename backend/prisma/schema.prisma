@@ -1,0 +1,457 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  Int            @id @default(autoincrement())
+  fullName            String
+  email               String         @unique
+  password            String
+  role                Role           @default(PATIENT)
+  isActive            Boolean        @default(true)
+  mustChangePassword  Boolean   @default(false)
+  refreshToken        String?        @unique   
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  resetToken          String?
+  resetTokenExpiry    DateTime?
+  admin               Admin?
+  notifications       Notification[]
+  nutritionist        Nutritionist?
+  patient             Patient?
+  sentMessages        Message[] @relation("SentMessages")
+  receivedMessages    Message[] @relation("ReceivedMessages")
+
+
+
+  @@map("users")
+}
+
+
+model Patient {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique
+
+  // Core vitals (set at registration/onboarding)
+  age              Int?
+  weight           Float?
+  height           Float?
+  goalWeight       Float?
+  dailyCalorieGoal Int?
+
+  // Health profile
+
+  medicalHistory   String?
+  allergies        String[]   // array — a patient can have multiple
+  conditions       String[]   // e.g. ["PCOS", "Diabetes"]
+  goals            String[]   // e.g. ["weight-loss", "wellness"]
+  activityLevel    String?    // sedentary | light | moderate | active | very-active
+
+  //Lifestyle (onboarding questionnaire)
+  dietaryPref      String?    // vegan, keto, etc.
+  waterIntake      Int?       // glasses per day
+  sleepHours       Float?
+  mealsPerDay      String?    // "3", "5-6", etc.
+  caffeine         String?    // none | moderate | high
+  challenges       String?
+  motivation       String?
+
+  // Relations 
+  measurements     Measurement[]
+  appointments     Appointment[]
+  comments         Comment[]
+  foodLogs         FoodLog[]
+  inquiries        Inquiry[]
+  nutritionPlans   NutritionPlan[]
+  progress         Progress[]
+  subscriptions    Subscription[]
+  chatbotMessages  ChatbotMessage[] 
+
+  user             User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("patients")
+}
+
+model Nutritionist {
+  id             Int             @id @default(autoincrement())
+  userId         Int             @unique
+  specialization String?
+  bio            String?
+  appointments   Appointment[]
+  availableSlots AvailableSlot[]
+  nutritionPlans NutritionPlan[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progress       Progress[]
+
+  @@map("nutritionists")
+}
+
+model Admin {
+  id           Int           @id @default(autoincrement())
+  userId       Int           @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auditLogs    AuditLog[]
+  blogArticles BlogArticle[]
+  inquiries    Inquiry[]
+
+  @@map("admins")
+}
+
+model ChatbotMessage {
+  id         Int      @id @default(autoincrement())
+  patientId  Int
+  message    String
+  response   String
+  provider   String
+  intent     String
+  duration   Int
+  createdAt  DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("chatbot_messages")
+}
+
+model Measurement {
+  id        Int      @id @default(autoincrement())
+  patientId Int
+  chest     Float?
+  waist     Float?
+  hips      Float?
+  arm       Float?
+  thigh     Float?
+  bodyFat   Float?
+  recordedAt DateTime @default(now())
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("measurements")
+}
+model Package {
+  id                    Int            @id @default(autoincrement())
+  name                  String         @unique   // ← make unique
+  tier                  String
+  priceMonthly          Float?
+  priceYearly           Float?
+  price                 Float?          // for seasonal (one‑time)
+  duration              String?         // for seasonal
+  aiScansPerDay         Int
+  consultationsPerMonth Int
+  chatbot               Boolean        @default(false)
+  mealPlanType          String?
+  highlight             Boolean        @default(false)
+  isSeasonal            Boolean        @default(false)
+  features              String[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  subscriptions         Subscription[]
+
+  @@map("packages")
+}
+
+model Subscription {
+  id                   Int                @id @default(autoincrement())
+  patientId            Int
+  packageId            Int
+  startDate            DateTime
+  endDate              DateTime
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeSubscriptionId String?
+  createdAt            DateTime           @default(now())
+  payments             Payment[]
+  package              Package            @relation(fields: [packageId], references: [id])
+  patient              Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                    Int           @id @default(autoincrement())
+  subscriptionId        Int
+  amount                Float
+  status                PaymentStatus @default(PENDING)
+  stripePaymentIntentId String?
+  createdAt             DateTime      @default(now())
+  subscription          Subscription  @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
+}
+
+model AvailableSlot {
+  id             Int          @id @default(autoincrement())
+  nutritionistId Int
+  date           DateTime
+  startTime      String
+  endTime        String
+  isBooked       Boolean      @default(false)
+  appointment    Appointment?
+  nutritionist   Nutritionist @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
+
+  @@map("available_slots")
+}
+
+model Appointment {
+  id             Int               @id @default(autoincrement())
+  patientId      Int
+  nutritionistId Int
+  slotId         Int               @unique
+  status         AppointmentStatus @default(PENDING)
+  jitsiLink      String?
+  notes          String?
+  createdAt      DateTime          @default(now())
+  nutritionist   Nutritionist      @relation(fields: [nutritionistId], references: [id])
+  patient        Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  slot           AvailableSlot     @relation(fields: [slotId], references: [id])
+
+  @@map("appointments")
+}
+
+model NutritionPlan {
+  id             Int          @id @default(autoincrement())
+  patientId      Int?                     // NULL for templates
+  nutritionistId Int?                     // NULL for templates
+  startDate      DateTime?
+  endDate        DateTime?
+  status         PlanStatus   @default(DRAFT)
+  isTemplate     Boolean      @default(false)   
+  name           String?                    
+  durationDays   Int?                       
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  meals          Meal[]
+  nutritionist   Nutritionist? @relation(fields: [nutritionistId], references: [id])
+  patient        Patient?      @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@map("nutrition_plans")
+}
+model Recipe {
+  id           String   @id @default(cuid())
+  name         String
+  emoji        String
+  kcal         Int
+  protein      Int
+  carbs        Int
+  fat          Int
+  category     String
+  tags         String[]
+  createdAt    DateTime @default(now())
+  imageUrl     String
+  prepTime     String
+  updatedAt    DateTime @updatedAt
+  description  String?
+  difficulty   String?
+  ingredients  String[]
+  instructions String[]
+
+  @@map("recipes")
+}
+
+model Meal {
+  id           Int           @id @default(autoincrement())
+  planId       Int
+  dayNumber    Int
+  mealType     MealType
+  instructions String?
+  foodItems    FoodItem[]
+  plan         NutritionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("meals")
+}
+
+model FoodItem {
+  id          Int     @id @default(autoincrement())
+  mealId      Int
+  name        String
+  calories    Float
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  portionSize String?
+  meal        Meal    @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@map("food_items")
+}
+
+model FoodLog {
+  id              Int           @id @default(autoincrement())
+  patientId       Int
+  imageUrl        String?
+  detectedFoods   Json?
+  totalCalories   Float?
+  confidenceScore Float?
+  estimatedAt     DateTime      @default(now())
+  aiEstimation    AIEstimation?
+  patient         Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("food_logs")
+}
+
+model AIEstimation {
+  id             Int      @id @default(autoincrement())
+  foodLogId      Int      @unique
+  modelVersion   String?
+  detectedItems  Json?
+  processingTime Float?
+  warning        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  foodLog        FoodLog  @relation(fields: [foodLogId], references: [id], onDelete: Cascade)
+
+  @@map("ai_estimations")
+}
+
+model Progress {
+  id                Int           @id @default(autoincrement())
+  patientId         Int
+  nutritionistId    Int?
+  weight            Float
+  goalWeight        Float?
+  nutritionistNotes String?
+  recordedAt        DateTime      @default(now())
+  nutritionist      Nutritionist? @relation(fields: [nutritionistId], references: [id])
+  patient           Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("progress")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String
+  imageUrl   String?
+  isRead     Boolean  @default(false)
+  sentAt     DateTime @default(now())
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@map("messages")
+}
+
+model BlogArticle {
+  id          Int           @id @default(autoincrement())
+  adminId     Int
+  title       String
+  content     String
+  category    String?
+  coverImage  String?
+  status      ArticleStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  admin       Admin         @relation(fields: [adminId], references: [id])
+  comments    Comment[]
+
+  @@map("blog_articles")
+}
+
+model Comment {
+  id        Int         @id @default(autoincrement())
+  articleId Int
+  patientId Int
+  content   String
+  createdAt DateTime    @default(now())
+  article   BlogArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  patient   Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Inquiry {
+  id          Int           @id @default(autoincrement())
+  patientId   Int
+  adminId     Int?
+  subject     String
+  message     String
+  reply       String?
+  status      InquiryStatus @default(UNREAD)
+  submittedAt DateTime      @default(now())
+  repliedAt   DateTime?
+  admin       Admin?        @relation(fields: [adminId], references: [id])
+  patient     Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("inquiries")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  adminId     Int
+  action      String
+  targetType  String
+  targetId    Int?
+  performedAt DateTime @default(now())
+  admin       Admin    @relation(fields: [adminId], references: [id])
+
+  @@map("audit_logs")
+}
+
+enum Role {
+  PATIENT
+  NUTRITIONIST
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum InquiryStatus {
+  UNREAD
+  PENDING
+  RESOLVED
+}
+
+enum NotificationType {
+  PLAN
+  APPOINTMENT
+  PAYMENT
+  MESSAGE
+}

@@ -1,0 +1,117 @@
+model Patient {
+  id             Int             @id @default(autoincrement())
+  userId         Int             @unique
+  age            Int?
+  weight         Float?
+  height         Float?
+  medicalHistory String?
+  allergies      String?
+  appointments   Appointment[]
+  comments       Comment[]
+  foodLogs       FoodLog[]
+  inquiries      Inquiry[]
+  sentMessages   Message[]       @relation("SentMessages")
+  nutritionPlans NutritionPlan[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progress       Progress[]
+  subscriptions  Subscription[]
+
+  @@map("patients")
+}
+
+
+
+service 
+const bcrypt = require('bcryptjs');
+const usersRepo = require('./users.repository');
+
+//  Get Profile 
+const getProfile = async (userId, role) => {
+  if (role === 'PATIENT') {
+    const profile = await usersRepo.getPatientProfile(userId);
+    if (!profile) throw new Error('Patient profile not found');
+    return profile;
+  }
+
+  if (role === 'NUTRITIONIST') {
+    const profile = await usersRepo.getNutritionistProfile(userId);
+    if (!profile) throw new Error('Nutritionist profile not found');
+    return profile;
+  }
+
+  // ADMIN
+  const user = await usersRepo.findById(userId);
+  if (!user) throw new Error('User not found');
+  return user;
+};
+
+//  Update Profile 
+const updateProfile = async (userId, role, data) => {
+  const { fullName, age, weight, height, medicalHistory, allergies, specialization, bio } = data;
+
+ 
+  if (fullName) {
+    await usersRepo.updateUser(userId, { fullName });
+  }
+
+
+  if (role === 'PATIENT') {
+    await usersRepo.updatePatientProfile(userId, {
+      ...(age && { age: parseInt(age) }),
+      ...(weight && { weight: parseFloat(weight) }),
+      ...(height && { height: parseFloat(height) }),
+      ...(medicalHistory && { medicalHistory }),
+      ...(allergies && { allergies }),
+    });
+  }
+
+
+  if (role === 'NUTRITIONIST') {
+    await usersRepo.updateNutritionistProfile(userId, {
+      ...(specialization && { specialization }),
+      ...(bio && { bio }),
+    });
+  }
+
+  return await getProfile(userId, role);
+};
+
+//  Change Password 
+const changePassword = async (userId, { currentPassword, newPassword }) => {
+
+  const user = await usersRepo.findById(userId);
+  if (!user) throw new Error('User not found');
+
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) throw new Error('Current password is incorrect');
+
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+
+  await usersRepo.updateUser(userId, { password: hashed });
+
+  return { message: 'Password changed successfully' };
+};
+
+module.exports = {
+  getProfile,
+  updateProfile,
+  changePassword,
+};
+
+
+
+package
+
+model Package {
+  id             Int            @id @default(autoincrement())
+  name           String
+  price          Float
+  durationMonths Int
+  features       String[]
+  subscriptions  Subscription[]
+
+  @@map("packages")
+}

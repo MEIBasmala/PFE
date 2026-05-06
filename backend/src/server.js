@@ -1,0 +1,73 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+
+const { createServer } = require('./config/socket');
+
+const app = express();
+app.use(cookieParser());
+
+// ── FIX: Serve uploaded files statically ──
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const { server } = createServer(app);
+
+app.use(helmet());
+app.use(morgan('dev'));
+
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true,
+}));
+
+// Stripe webhook needs raw body must be before express.json()
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+//  Routes
+app.use('/api/auth',            require('./modules/auth/auth.routes'));
+app.use('/api/auth/refresh',    require('./modules/refresh/refresh.routes'));
+app.use('/api/users',           require('./modules/users/users.routes'));
+app.use('/api/subscriptions',   require('./modules/subscriptions/subscriptions.routes'));
+app.use('/api/payments',        require('./modules/payments/payments.routes'));
+app.use('/api/slots',           require('./modules/slots/slots.routes'));
+app.use('/api/appointments',    require('./modules/appointments/appointments.routes'));
+app.use('/api/nutrition-plans', require('./modules/nutrition-plans/plans.routes'));
+app.use('/api/food-logs',       require('./modules/food-logs/food-logs.routes'));
+app.use('/api/progress',        require('./modules/progress/progress.routes'));
+app.use('/api/messages',        require('./modules/messages/messages.routes'));
+app.use('/api/blog',            require('./modules/blog/blog.routes'));
+app.use('/api/inquiries',       require('./modules/inquiries/inquiries.routes'));
+app.use('/api/notifications',   require('./modules/notifications/notifications.routes'));
+app.use('/api/admin',           require('./modules/admin/admin.routes'));
+app.use('/api/recipes',         require('./modules/recipes/recipes.routes'));
+app.use('/api/patients',        require('./modules/patients/patients.routes'));
+app.use('/api/chatbot',         require('./modules/chatbot/chatbot.routes'));
+
+//  Health Check 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'KhabirLens API is running 🚀' });
+});
+
+//  404 Handler 
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
+
+//  Global Error Handler 
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
+//  Start 
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`✅ KhabirLens API running on http://localhost:${PORT}`);
+  console.log(`Socket.IO attached`);
+});
