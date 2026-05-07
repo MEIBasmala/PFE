@@ -41,7 +41,7 @@ export default function AdminDashboard() {
       title="Admin Dashboard"
       sections={sections}
       userName={user?.fullName || 'Admin'}
-      userRole="ADMIIN"
+      userRole="ADMIN"
       userAvatar={ user?.fullName?.[0]?.toUpperCase() || 'A'}
     >
       <Suspense fallback={<RouteLoader />}>

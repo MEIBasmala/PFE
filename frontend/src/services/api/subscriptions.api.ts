@@ -4,7 +4,10 @@ import type { Package, Subscription } from '@/types/api';
 
 // subscriptions.api.ts
 export const getPackages = async (): Promise<Package[]> => {
-  const data = await apiFetch<any[]>('/subscriptions/packages');
+  const data = await apiFetch<any[]>(
+    '/subscriptions/packages',
+    { skipAuth: true }  
+  );
   if (!Array.isArray(data)) return [];
   return data.map(pkg => ({
     id: pkg.id ?? pkg._id,          // handle both until backend is consistent

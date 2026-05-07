@@ -160,7 +160,7 @@ const callGeminiStream = async (context, history, message) => {
       parts: [{ text: msg.content }]
     })),
     generationConfig: {
-      maxOutputTokens: 300,
+      maxOutputTokens: 800 ,
       temperature: 0.7
     }
   });
@@ -245,7 +245,14 @@ const chat = async (userId, message, history = [], res) => {
   const startTime = Date.now();
   const intent = detectIntent(message);
 
-  const pkg = await getPatientPackage(patient.id);
+  const patient = await prisma.patient.findUnique({ where: { userId } });
+  if (!patient) {
+    res.write(`data: ${JSON.stringify({ error: 'Patient profile not found' })}\n\n`);
+    res.end();
+    return;
+  }
+
+const pkg = await getPatientPackage(userId);
   if (!pkg || !pkg.chatbot) {
     res.write(`data: ${JSON.stringify({ error: 'Chatbot not included in your current plan. Upgrade to unlock.' })}\n\n`);
     res.end();
@@ -539,9 +546,11 @@ const getChatbotStats = async () => {
   };
 };
 
-const getPatientPackage = async (patientId) => {
+const getPatientPackage = async (userId) => {
+  const patient = await prisma.patient.findUnique({ where: { userId } });
+  if (!patient) return null;
   const sub = await prisma.subscription.findFirst({
-    where: { patientId, status: 'ACTIVE' },
+    where: { patientId: patient.id, status: 'ACTIVE' },
     include: { package: true },
   });
   return sub?.package ?? null;

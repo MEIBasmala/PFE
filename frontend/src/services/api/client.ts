@@ -65,8 +65,10 @@ async function refreshAccessToken(): Promise<string> {
 // ── Core fetch wrapper ───────────────────────────────────────
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { skipAuth?: boolean } = {}
 ): Promise<T> {
+  const { skipAuth, ...fetchOptions } = options;
+  const token = skipAuth ? null : getToken();
   const url = `${BASE_URL}${endpoint}`;
 
   const makeRequest = (token: string | null): Promise<Response> => {
@@ -96,7 +98,7 @@ export async function apiFetch<T>(
         notifyRefreshSubscribers(newToken);
       } catch {
         // Refresh failed — session is truly dead
-        await logout(true);
+        await logout(false); // Clear state without redirecting
         throw new Error('Session expired. Please log in again.');
       } finally {
         isRefreshing = false;
@@ -144,12 +146,14 @@ export async function apiFetchBlob(
 
 // ── Generic HTTP helpers ─────────────────────────────────────
 export const api = {
-  get: <T>(path: string) => apiFetch<T>(path, { method: 'GET' }),
-  post: <T>(path: string, body?: any) =>
-    apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
-  put: <T>(path: string, body?: any) =>
-    apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
-  patch: <T>(path: string, body?: any) =>
-    apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+  get: <T>(path: string, opts?: { skipAuth?: boolean }) =>
+    apiFetch<T>(path, { method: 'GET', ...opts }),
+  post: <T>(path: string, body?: any, opts?: { skipAuth?: boolean }) =>
+    apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body), ...opts }),
+  put: <T>(path: string, body?: any, opts?: { skipAuth?: boolean }) =>
+    apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body), ...opts }),
+  patch: <T>(path: string, body?: any, opts?: { skipAuth?: boolean }) =>
+    apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body), ...opts }),
+  delete: <T>(path: string, opts?: { skipAuth?: boolean }) =>
+    apiFetch<T>(path, { method: 'DELETE', ...opts }),
 };

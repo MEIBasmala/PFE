@@ -39,7 +39,7 @@ export default function NutritionistDashboard() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user || (user.role !== 'NUTRITIONIST' && user.role !== 'ADMIN')) {
+    if (!user || (user.role !== 'NUTRITIONIST')) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);

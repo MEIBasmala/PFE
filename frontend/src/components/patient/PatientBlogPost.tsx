@@ -3,19 +3,19 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Calendar as CalendarIcon, Clock, Heart, MessageCircle, Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { getBlogArticle, likeBlogArticle } from "@/services/api";
+import { getBlogArticle, likeBlogArticle,addBlogComment ,getUser} from "@/services/api";
 import type { BlogArticle, Comment } from "@/types/api";
 import { formatShortDate } from "@/lib/date";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-
 import {
   Button,
   Skeleton,
   Badge,
   Separator,
   Avatar,
+  Textarea,
   AvatarFallback,
 } from "@/components/ui";
 
@@ -73,6 +73,9 @@ function preprocessMarkdown(content: string): string {
 }
 
 export default function PatientBlogPost() {
+  const currentUser = getUser<{ id: number; role: string; fullName: string }>();
+const [commentText, setCommentText] = useState("");
+const [submittingComment, setSubmittingComment] = useState(false);
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [article, setArticle] = useState<BlogArticle | null>(null);
@@ -263,30 +266,90 @@ export default function PatientBlogPost() {
           <Badge variant="outline">#wellness</Badge>
         </div>
         <div className="border-t pt-6 mb-8">
-          <h3 className="text-lg font-semibold mb-4">Comments ({commentCount})</h3>
-          {commentCount === 0 ? (
-            <p className="text-muted-foreground text-sm">No comments yet. Be the first to share your thoughts!</p>
-          ) : (
-            <div className="space-y-4">
-              {comments.map((comment: Comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {comment.patient?.user?.fullName?.[0]?.toUpperCase() || "P"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{comment.patient?.user?.fullName || "Patient"}</span>
-                      <span className="text-xs text-muted-foreground">{formatShortDate(comment.createdAt)}</span>
-                    </div>
-                    <p className="text-sm mt-1">{comment.content}</p>
-                  </div>
-                </div>
-              ))}
+  <h3 className="text-lg font-semibold mb-4">Comments ({commentCount})</h3>
+
+  {/* Comment form – only for authenticated patients */}
+  {currentUser?.role === "PATIENT" ? (
+    <div className="mb-6">
+      <Textarea
+        placeholder="Share your thoughts..."
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        rows={3}
+        className="mb-2"
+      />
+      <Button
+        onClick={async () => {
+          if (!commentText.trim()) {
+            toast.error("Please write a comment");
+            return;
+          }
+          setSubmittingComment(true);
+          try {
+            const newComment = await addBlogComment(id, commentText);
+            // Prepend new comment to the list
+            setArticle((prev) =>
+  prev
+    ? {
+        ...prev,
+        comments: [newComment, ...(prev.comments || [])],
+      }
+    : prev
+);
+            setCommentText("");
+            toast.success("Comment added");
+          } catch (err) {
+            toast.error("Failed to add comment");
+          } finally {
+            setSubmittingComment(false);
+          }
+        }}
+        disabled={submittingComment}
+      >
+        {submittingComment ? "Posting..." : "Post Comment"}
+      </Button>
+    </div>
+  ) : currentUser ? (
+    <p className="text-sm text-muted-foreground mb-4">
+      Only patients can leave comments.
+    </p>
+  ) : (
+    <p className="text-sm text-muted-foreground mb-4">
+      <Button variant="link" className="p-0" onClick={() => navigate("/auth")}>
+        Sign in
+      </Button>{" "}
+      as a patient to join the discussion.
+    </p>
+  )}
+
+  {/* Existing comments list */}
+  {commentCount === 0 ? (
+    <p className="text-muted-foreground text-sm">No comments yet. Be the first to share your thoughts!</p>
+  ) : (
+    <div className="space-y-4">
+      {comments.map((comment: Comment) => (
+        <div key={comment.id} className="flex gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary/10 text-primary">
+              {comment.patient?.user?.fullName?.[0]?.toUpperCase() || "P"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm">
+                {comment.patient?.user?.fullName || "Patient"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatShortDate(comment.createdAt)}
+              </span>
             </div>
-          )}
+            <p className="text-sm mt-1">{comment.content}</p>
+          </div>
         </div>
+      ))}
+    </div>
+  )}
+</div>
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
           <Button variant="outline" onClick={() => navigate("/patient/blog")}>
             <ArrowLeft className="mr-2 h-4 w-4" /> All Articles

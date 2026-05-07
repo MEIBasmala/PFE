@@ -143,7 +143,7 @@ const Navbar = () => {
     >
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2 shrink-0 no-underline group min-w-0">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center shrink-0 transition-transform group-hover:rotate-[8deg]">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center shrink-0 transition-transform group-hover:rotate-[8deg]">
           <img src="../img/logo.png" alt="KhabirLens" className="w-7 h-7 rounded-lg" />
         </div>
         <span className="font-syne font-extrabold text-[1.1rem] sm:text-[1.3rem] text-kl-green-dark tracking-tight truncate">

@@ -1,6 +1,6 @@
 // src/pages/Homepage.tsx
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Navbar, Footer } from '@/components/layout';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -42,12 +42,12 @@ import {
   Shield,
   ArrowRight,
   X,
+  AlertCircle,
 } from 'lucide-react';
 
-// ── NEW: API imports ─────────────────────────────────────────
 import { getBlogArticles } from '@/services/api/blog.api';
 import { getPackages } from '@/services/api/subscriptions.api';
-
+import { useAuth } from '@/contexts/AuthContext';
 import '../styles/homepage.css';
 
 /* ─── Image URLs ─── */
@@ -92,8 +92,8 @@ interface HomepageProps {
   onContactSubmit?: (payload: ContactPayload) => Promise<void>;
 }
 
-/* ─── Fallback Data (used if API fails) ─── */
-const DEFAULT_BLOG_POSTS: BlogPost[] = [
+/* ─── Static fallback blog posts (shown if API fails) ─── */
+const FALLBACK_BLOG_POSTS: BlogPost[] = [
   {
     id: 1,
     title: 'The Complete Guide to Mindful Eating',
@@ -132,33 +132,34 @@ const DEFAULT_BLOG_POSTS: BlogPost[] = [
   },
 ];
 
-const DEFAULT_PRICING_PLANS: PricingPlan[] = [
-  {
-    name: 'Starter',
-    price: '0 DZD',
-    period: '/forever',
-    features: ['2 AI calorie scans per day', 'Pre‑built sample meals', 'Food diary & tracking', 'Basic blog access'],
-    cta: 'Start Free',
-    featured: false,
-    badge: null,
-  },
+/* ─── Static fallback pricing (shown if API fails) ─── */
+const FALLBACK_PRICING_PLANS: PricingPlan[] = [
   {
     name: 'Basic',
-    price: '3 500 DZD',
+    price: '3 500 DZD',
     period: '/month',
-    features: ['10 AI calorie scans per day', '1 consultation/month (Zoom/Meet)', 'Pre‑built meal plans', 'Full recipe library', 'Email support'],
+    features: ['10 AI calorie scans per day', '1 consultation/month (Zoom/Meet)', 'Pre-built meal plans', 'Full recipe library', 'Email support'],
     cta: 'Choose Basic',
     featured: false,
     badge: null,
   },
   {
     name: 'Premium',
-    price: '6 500 DZD',
+    price: '6 500 DZD',
     period: '/month',
     features: ['Unlimited AI scans', '2 consultations/month', 'Personalised meal plans', 'AI chatbot assistant', 'Rotating nutritionist specialists'],
     cta: 'Go Premium',
     featured: true,
     badge: 'Most Popular',
+  },
+  {
+    name: 'Elite',
+    price: '9 500 DZD',
+    period: '/month',
+    features: ['Everything in Premium', 'Dedicated nutritionist', 'Weekly check-ins', 'Priority support', 'Custom grocery lists'],
+    cta: 'Go Elite',
+    featured: false,
+    badge: null,
   },
 ];
 
@@ -204,112 +205,122 @@ const testimonials = [
 ];
 
 /* ─── Component ─── */
-const Homepage = ({
-  onContactSubmit,
-}: HomepageProps) => {
+const Homepage = ({ onContactSubmit }: HomepageProps) => {
+  const navigate = useNavigate();
+const { user: currentUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
+  // 'role-blog' | 'role-pricing' — to show role-restriction alert inside same modal
+  const [modalReason, setModalReason] = useState<'signup' | 'role-blog' | 'role-pricing'>('signup');
+
   const [contactForm, setContactForm] = useState<ContactPayload>({ name: '', email: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
 
-  // ── NEW: Dynamic blog state ───────────────────────────────
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
+  // Blog state
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [blogLoading, setBlogLoading] = useState(true);
 
-  // ── NEW: Dynamic pricing state ────────────────────────────
-  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>(DEFAULT_PRICING_PLANS);
-  const [plansLoading, setPlansLoading] = useState(true);
+  // Pricing state — only non-free/non-seasonal standard plans, max 3
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
+  const [pricingLoading, setPricingLoading] = useState(true);
 
-  // ── Fetch blog posts on mount ─────────────────────────────
-  useEffect(() => {
-    const fetchBlog = async () => {
-      try {
-        const articles = await getBlogArticles({});
-        const formatted = articles.slice(0, 3).map(article => ({
+  /* ── Fetch blog posts ── */
+useEffect(() => {
+  getBlogArticles({})
+    .then((articles) => {
+      const published = articles
+        .filter((a) => a.status === 'PUBLISHED')
+        .slice(0, 3)
+        .map((article) => ({
           id: article.id,
           title: article.title,
           category: article.category || 'General',
-          excerpt: article.content?.substring(0, 120) + '...' || '',
-          author: article.admin?.user?.fullName || 'KhabirLens Team',
-          date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          readTime: `${Math.ceil((article.content?.length || 0) / 1000)} min read`,
+          excerpt: article.content.substring(0, 120) + '...',
+          author: article.admin?.user.fullName || 'KhabirLens Team',
+          date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
+          readTime: `${Math.max(1, Math.ceil(article.content.length / 1000))} min read`,
           likes: article.likes || 0,
           comments: article.comments?.length || 0,
           imageUrl: article.coverImage,
         }));
-        setBlogPosts(formatted);
-      } catch (error) {
-        console.error('Failed to load blog posts', error);
-        // Keep DEFAULT_BLOG_POSTS as fallback
-      } finally {
-        setBlogLoading(false);
-      }
-    };
-    fetchBlog();
-  }, []);
+      setBlogPosts(published.length > 0 ? published : FALLBACK_BLOG_POSTS);
+    })
+    .catch(() => setBlogPosts(FALLBACK_BLOG_POSTS))
+    .finally(() => setBlogLoading(false));
+}, []);
 
-  // ── Fetch pricing plans on mount ────────────────────────
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const packages = await getPackages();
-        const mapped = packages.map(pkg => ({
+/* ── Fetch pricing packages ── */
+useEffect(() => {
+  getPackages()
+    .then((packages) => {
+      const standard = packages
+        .filter((pkg) => !pkg.isSeasonal && (pkg.priceMonthly ?? 0) > 0)
+        .slice(0, 3)
+        .map((pkg) => ({
           name: pkg.name,
-          price: pkg.isSeasonal
-            ? `${pkg.price} DZD`
-            : `${pkg.priceMonthly} DZD`,
-          period: pkg.isSeasonal ? '/one‑time' : '/month',
+          price: `${(pkg.priceMonthly ?? 0).toLocaleString('fr-DZ')} DZD`,
+          period: '/month',
           features: pkg.features,
-          cta: pkg.name === 'Starter' ? 'Start Free' : `Choose ${pkg.name}`,
+          cta: `Choose ${pkg.name}`,
           featured: pkg.highlight,
           badge: pkg.highlight ? 'Most Popular' : null,
         }));
-        setPricingPlans(mapped);
-      } catch (error) {
-        console.error('Failed to load packages', error);
-        // Keep DEFAULT_PRICING_PLANS as fallback
-      } finally {
-        setPlansLoading(false);
-      }
-    };
-    fetchPlans();
-  }, []);
+      setPricingPlans(standard.length > 0 ? standard : FALLBACK_PRICING_PLANS);
+    })
+    .catch(() => setPricingPlans(FALLBACK_PRICING_PLANS))
+    .finally(() => setPricingLoading(false));
+}, []);
 
-  /* Scroll reveal observer */
+  /* ── Scroll reveal observer — re-runs when async data finishes loading ── */
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry, i) => {
-          if (entry.isIntersecting) {
-            setTimeout(() => entry.target.classList.add('visible'), i * 80);
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-    document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach((el) => observer.observe(el));
+    // Small timeout lets React flush the new DOM nodes before we observe them
+    const timer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+              setTimeout(() => entry.target.classList.add('visible'), i * 80);
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach((el) => {
+        if (!el.classList.contains('visible')) observer.observe(el);
+      });
 
-    const staggerObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            staggerObserver.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12 }
-    );
-    document.querySelectorAll('.reveal-stagger').forEach((el) => staggerObserver.observe(el));
+      const staggerObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              staggerObserver.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.12 }
+      );
+      document.querySelectorAll('.reveal-stagger').forEach((el) => {
+        if (!el.classList.contains('visible')) staggerObserver.observe(el);
+      });
+      document.querySelectorAll('.step-reveal').forEach((el) => {
+        if (!el.classList.contains('visible')) observer.observe(el);
+      });
 
-    document.querySelectorAll('.step-reveal').forEach((el) => observer.observe(el));
+      return () => {
+        observer.disconnect();
+        staggerObserver.disconnect();
+      };
+    }, 50);
 
-    return () => {
-      observer.disconnect();
-      staggerObserver.disconnect();
-    };
-  }, []);
+    return () => clearTimeout(timer);
+    // Re-observe after blog/pricing data arrives so their cards get picked up
+  }, [blogLoading, pricingLoading]);
 
+  /* ── Contact submit ── */
   const defaultContactSubmit = useCallback(async () => {
     await new Promise((r) => setTimeout(r, 400));
     toast({ title: 'Message sent!', description: "We'll get back to you soon." });
@@ -335,25 +346,58 @@ const Homepage = ({
     }
   };
 
-  return (
-    <div className="warm-bg">
-      <Navbar />
-      <ScrollToTop />
+  /* ── Smart routing helpers ── */
+  /**
+   * Handles "Read Blog" / blog card actions.
+   * - Not logged in → sign-up modal
+   * - PATIENT → navigate to patient blog page
+   * - Other role → modal with role restriction notice
+   */
+  const handleBlogAction = () => {
+    if (!currentUser) {
+      setModalReason('signup');
+      setShowModal(true);
+      return;
+    }
+    if (currentUser.role === 'PATIENT') {
+      navigate('/patient/blog');
+      return;
+    }
+    // NUTRITIONIST or ADMIN
+    setModalReason('role-blog');
+    setShowModal(true);
+  };
 
-      {/* ── Register Dialog ── */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-[450px] text-center">
-          <DialogHeader>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[hsl(var(--green-light))]">
-              <Lock size={28} className="text-[hsl(var(--green-dark))]" />
-            </div>
-            <DialogTitle className="font-syne text-2xl font-extrabold">
-              Unlock Full Access
-            </DialogTitle>
-            <DialogDescription className="text-[hsl(var(--text-m))]">
-              Create a free account to read full articles, leave comments, and get personalized nutrition advice.
-            </DialogDescription>
-          </DialogHeader>
+  /**
+   * Handles pricing plan CTA clicks.
+   * - Not logged in → sign-up modal
+   * - PATIENT → navigate to patient subscription page
+   * - Other role → modal with role restriction notice
+   */
+  const handlePricingAction = () => {
+    if (!currentUser) {
+      setModalReason('signup');
+      setShowModal(true);
+      return;
+    }
+    if (currentUser.role === 'PATIENT') {
+      navigate('/patient/subscription');
+      return;
+    }
+    setModalReason('role-pricing');
+    setShowModal(true);
+  };
+
+  /* ── Modal content by reason ── */
+  const modalContent = {
+    signup: {
+      icon: <Lock size={28} className="text-[hsl(var(--green-dark))]" />,
+      iconBg: 'bg-[hsl(var(--green-light))]',
+      title: 'Unlock Full Access',
+      description:
+        'Create a free account to read full articles, leave comments, and get personalized nutrition advice.',
+      footer: (
+        <>
           <div className="flex gap-3 justify-center pt-2">
             <Button asChild>
               <Link to="/auth" className="no-underline flex items-center gap-2">
@@ -370,6 +414,61 @@ const Homepage = ({
               Log in
             </Link>
           </p>
+        </>
+      ),
+    },
+    'role-blog': {
+      icon: <AlertCircle size={28} className="text-[hsl(var(--orange))]" />,
+      iconBg: 'bg-[hsl(var(--orange-20))]',
+      title: 'Patient Area Only',
+      description:
+        'The blog section is available exclusively for patient accounts. Your current role doesn\'t have access to this page.',
+      footer: (
+        <div className="flex gap-3 justify-center pt-2">
+          <Button variant="outline" onClick={() => setShowModal(false)}>
+            Got It
+          </Button>
+        </div>
+      ),
+    },
+    'role-pricing': {
+      icon: <AlertCircle size={28} className="text-[hsl(var(--orange))]" />,
+      iconBg: 'bg-[hsl(var(--orange-20))]',
+      title: 'Patient Area Only',
+      description:
+        'Subscription plans are for patient accounts. Your current role doesn\'t have access to the subscription dashboard.',
+      footer: (
+        <div className="flex gap-3 justify-center pt-2">
+          <Button variant="outline" onClick={() => setShowModal(false)}>
+            Got It
+          </Button>
+        </div>
+      ),
+    },
+  };
+
+  const activeModal = modalContent[modalReason];
+
+  return (
+    <div className="warm-bg">
+      <Navbar />
+      <ScrollToTop />
+
+      {/* ── Unified Dialog ── */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-[450px] text-center">
+          <DialogHeader>
+            <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl ${activeModal.iconBg}`}>
+              {activeModal.icon}
+            </div>
+            <DialogTitle className="font-syne text-2xl font-extrabold">
+              {activeModal.title}
+            </DialogTitle>
+            <DialogDescription className="text-[hsl(var(--text-m))]">
+              {activeModal.description}
+            </DialogDescription>
+          </DialogHeader>
+          {activeModal.footer}
         </DialogContent>
       </Dialog>
 
@@ -420,16 +519,33 @@ const Homepage = ({
           </p>
 
           <div className="flex gap-4 justify-center flex-wrap animate-fadeUp-3 max-[480px]:flex-col max-[480px]:items-center">
-            <Button asChild size="lg" className="px-8 py-3.5 text-[0.95rem]">
-              <Link to="/auth" className="no-underline flex items-center gap-2">
-                <Rocket size={18} /> Start Your Journey
-              </Link>
-            </Button>
+            {currentUser ? (
+              <Button asChild size="lg" className="px-8 py-3.5 text-[0.95rem]">
+                <Link
+                  to={
+                    currentUser.role === 'PATIENT'
+                      ? '/patient/dashboard'
+                      : currentUser.role === 'NUTRITIONIST'
+                        ? '/nutritionist/dashboard'
+                        : '/admin'
+                  }
+                  className="no-underline flex items-center gap-2"
+                >
+                  <Rocket size={18} /> Go to Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="lg" className="px-8 py-3.5 text-[0.95rem]">
+                <Link to="/auth" className="no-underline flex items-center gap-2">
+                  <Rocket size={18} /> Start Your Journey
+                </Link>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="lg"
               className="px-8 py-3.5 text-[0.95rem] flex items-center gap-2"
-              onClick={() => setShowModal(true)}
+              onClick={handleBlogAction}
             >
               <BookOpen size={18} /> Read Our Blog
             </Button>
@@ -614,7 +730,7 @@ const Homepage = ({
       <Separator className="mx-[6%]" />
 
       {/* ═══════════════════════════════════════
-          BLOG PREVIEW (DYNAMIC)
+          BLOG PREVIEW
       ═══════════════════════════════════════ */}
       <section className="blog-section" id="blog-section">
         <div className="reveal text-center">
@@ -641,10 +757,13 @@ const Homepage = ({
             ))
           ) : (
             blogPosts.map((post) => (
-              <Card key={post.id} className="reveal overflow-hidden">
-                <div className="lock-overlay-badge">
-                  <Lock size={10} /> Sign up to read
-                </div>
+              <Card key={post.id} className="overflow-hidden">
+                {/* Only show lock badge when user isn't a patient */}
+                {(!currentUser || currentUser.role !== 'PATIENT') && (
+                  <div className="lock-overlay-badge">
+                    <Lock size={10} /> {currentUser ? 'Patient access only' : 'Sign up to read'}
+                  </div>
+                )}
                 <div className="blog-card-img">
                   {post.imageUrl ? (
                     <img src={post.imageUrl} alt={post.title} />
@@ -670,13 +789,13 @@ const Homepage = ({
                     <span>{post.readTime}</span>
                   </div>
                   <div className="blog-card-actions">
-                    <button onClick={() => setShowModal(true)}>
+                    <button onClick={handleBlogAction}>
                       <Heart size={12} /> {post.likes}
                     </button>
-                    <button onClick={() => setShowModal(true)}>
+                    <button onClick={handleBlogAction}>
                       <MessageCircle size={12} /> {post.comments}
                     </button>
-                    <button onClick={() => setShowModal(true)}>
+                    <button onClick={handleBlogAction}>
                       <Bookmark size={12} /> Save
                     </button>
                   </div>
@@ -686,10 +805,136 @@ const Homepage = ({
           )}
         </div>
 
+        {/* Smart CTA below blog cards */}
         <div className="text-center mt-8">
-          <Button variant="outline" onClick={() => setShowModal(true)}>
-            <Lock size={14} className="mr-1" /> Sign up to read full articles and comment →
-          </Button>
+          {currentUser?.role === 'PATIENT' ? (
+            <Button asChild variant="default">
+              <Link to="/patient/blog" className="no-underline inline-flex items-center gap-2">
+                <BookOpen size={14} /> Browse All Articles <ArrowRight size={14} />
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleBlogAction}>
+              <Lock size={14} className="mr-1" />
+              {currentUser
+                ? 'Blog access is for patient accounts'
+                : 'Sign up to read full articles and comment →'}
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <Separator className="mx-[6%]" />
+
+      {/* ═══════════════════════════════════════
+          PRICING PREVIEW (non-free standard plans)
+      ═══════════════════════════════════════ */}
+      <section
+        id="pricing"
+        className="relative z-[1] py-16 px-[6%] overflow-hidden"
+      >
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `url('${IMAGE_URLS.pricing}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+        <div
+          className="absolute inset-0 z-1"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.3)',
+            backdropFilter: 'blur(12px)',
+          }}
+        />
+
+        <div className="relative z-2">
+          <div className="text-center reveal">
+            <span className="section-tag font-syne">
+              <Sparkles size={12} className="inline-block align-middle mr-1" /> Pricing
+            </span>
+            <h2 className="section-title font-syne">Simple, Transparent Plans</h2>
+            <p className="section-sub mx-auto">
+              Choose the perfect plan for your health journey.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-5 mt-10 max-w-[1100px] mx-auto max-lg:grid-cols-2 max-md:grid-cols-1">
+            {pricingLoading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)' }}>
+                  <CardContent className="p-6 space-y-3">
+                    <Skeleton className="h-6 w-24 mx-auto" />
+                    <Skeleton className="h-8 w-32 mx-auto" />
+                    <div className="space-y-2 mt-4">
+                      {Array.from({ length: 4 }).map((_, j) => (
+                        <Skeleton key={j} className="h-4 w-full" />
+                      ))}
+                    </div>
+                    <Skeleton className="h-9 w-full mt-4" />
+                  </CardContent>
+                </Card>
+              ))
+              : pricingPlans.map((plan) => (
+                <div key={plan.name} className="relative h-full">
+                  {plan.badge && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-[hsl(var(--green))] text-white text-[0.65rem] font-bold px-3 py-0.5 rounded-full whitespace-nowrap shadow-sm">
+                      {plan.badge}
+                    </div>
+                  )}
+                  <Card
+                    className={`h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${plan.badge ? 'pt-2' : ''
+                      }`}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.85)',
+                      backdropFilter: 'blur(4px)',
+                    }}
+                  >
+                    <CardContent className="p-6 text-center flex flex-col h-full">
+                      <div className="font-syne text-xl font-bold mb-1">{plan.name}</div>
+                      <div className="font-syne text-2xl font-extrabold text-[hsl(var(--green-dark))]">
+                        {plan.price}
+                        <span className="text-sm font-normal text-[hsl(var(--text-m))] ml-1">
+                          {plan.period}
+                        </span>
+                      </div>
+                      <ul className="space-y-2 my-5 text-sm text-left flex-grow">
+                        {plan.features.map((feature, i) => (
+                          <li key={i} className="flex items-center gap-2 text-[hsl(var(--text-m))]">
+                            <Check size={14} className="text-[hsl(var(--green-dark))] flex-shrink-0" />
+                            <span className="text-[0.8rem]">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button className="w-full" variant="secondary" onClick={handlePricingAction}>
+                        {plan.cta}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+          </div>
+
+          {/* Smart CTA below plans */}
+          <div className="text-center mt-10">
+            {currentUser?.role === 'PATIENT' ? (
+              <Button asChild>
+                <Link to="/patient/subscription" className="no-underline inline-flex items-center gap-2">
+                  <Sparkles size={14} />
+                  Manage My Subscription <ArrowRight size={14} />
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" asChild>
+                <Link to="/auth" className="no-underline inline-flex items-center gap-2">
+                  <Sparkles size={14} />
+                  Register to discover more offers & seasonal programs
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       </section>
 
@@ -798,9 +1043,8 @@ const Homepage = ({
             {testimonials.map((t, i) => (
               <Card
                 key={i}
-                className={`relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] ${
-                  t.featured ? 'before:opacity-100' : 'before:opacity-0 hover:before:opacity-100'
-                }`}
+                className={`relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] ${t.featured ? 'before:opacity-100' : 'before:opacity-0 hover:before:opacity-100'
+                  }`}
                 style={{
                   background: t.featured
                     ? 'rgba(194,230,110,0.08)'
@@ -837,11 +1081,10 @@ const Homepage = ({
 
                   <div className="flex items-center gap-3 pt-5 border-t border-white/10">
                     <div
-                      className={`w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold transition-transform group-hover:scale-[1.08] border-2 border-white/15 ${
-                        t.featured
-                          ? 'bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))]'
-                          : 'bg-[hsl(var(--saffron-light))] text-[#8a6200]'
-                      }`}
+                      className={`w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold transition-transform group-hover:scale-[1.08] border-2 border-white/15 ${t.featured
+                        ? 'bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))]'
+                        : 'bg-[hsl(var(--saffron-light))] text-[#8a6200]'
+                        }`}
                     >
                       {t.avatar}
                     </div>
@@ -856,116 +1099,6 @@ const Homepage = ({
           </div>
         </div>
       </div>
-
-      <Separator className="mx-[6%]" />
-
-      {/* ═══════════════════════════════════════
-          PRICING (DYNAMIC)
-      ═══════════════════════════════════════ */}
-      <section
-        id="pricing"
-        className="relative z-[1] py-16 px-[6%] overflow-hidden"
-      >
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: `url('${IMAGE_URLS.pricing}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
-        <div
-          className="absolute inset-0 z-1"
-          style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-            backdropFilter: 'blur(12px)',
-          }}
-        />
-
-        <div className="relative z-2">
-          <div className="text-center reveal">
-            <span className="section-tag font-syne">
-              <Sparkles size={12} className="inline-block align-middle mr-1" /> Pricing
-            </span>
-            <h2 className="section-title font-syne">Simple, Transparent Plans</h2>
-            <p className="section-sub mx-auto">
-              Choose the perfect plan for your health journey.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-5 mt-10 max-w-[1100px] mx-auto max-lg:grid-cols-2 max-md:grid-cols-1">
-            {plansLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="p-6">
-                  <Skeleton className="h-6 w-24 mx-auto mb-2" />
-                  <Skeleton className="h-10 w-32 mx-auto mb-4" />
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((__, j) => (
-                      <Skeleton key={j} className="h-4 w-full" />
-                    ))}
-                  </div>
-                  <Skeleton className="h-10 w-full mt-5" />
-                </Card>
-              ))
-            ) : (
-              pricingPlans.map((plan) => (
-                <Card
-                  key={plan.name}
-                  className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
-                    plan.featured ? 'border-[hsl(var(--green))]' : ''
-                  }`}
-                  style={{
-                    background: plan.featured
-                      ? 'rgba(194, 230, 110, 0.25)'
-                      : 'rgba(255, 255, 255, 0.85)',
-                    backdropFilter: 'blur(4px)',
-                  }}
-                >
-                  {plan.badge && (
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[hsl(var(--green))] text-white text-[0.65rem] font-bold px-3 py-0.5 rounded-full whitespace-nowrap z-10 shadow-sm">
-                      {plan.badge}
-                    </div>
-                  )}
-                  <CardContent className="p-6 text-center">
-                    <div className="font-syne text-xl font-bold mb-1">{plan.name}</div>
-                    <div className="font-syne text-2xl font-extrabold text-[hsl(var(--green-dark))]">
-                      {plan.price}
-                      <span className="text-sm font-normal text-[hsl(var(--text-m))] ml-1">
-                        {plan.period}
-                      </span>
-                    </div>
-                    <ul className="space-y-2 my-5 text-sm text-left">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-[hsl(var(--text-m))]">
-                          <Check size={14} className="text-[hsl(var(--green-dark))] flex-shrink-0" />
-                          <span className="text-[0.8rem]">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      className="w-full"
-                      variant={plan.featured ? 'default' : 'outline'}
-                      onClick={() => setShowModal(true)}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-
-          <div className="text-center mt-10">
-            <Button variant="outline" asChild>
-              <Link to="/auth" className="no-underline inline-flex items-center gap-2">
-                <Sparkles size={14} />
-                Register to discover more offers & seasonal programs
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
 
       <Separator className="mx-[6%]" />
 
@@ -995,11 +1128,28 @@ const Homepage = ({
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button asChild size="lg" className="px-8 py-3.5">
-              <Link to="/auth" className="no-underline inline-flex items-center gap-2">
-                <Rocket size={18} /> Get Started Free
-              </Link>
-            </Button>
+            {currentUser ? (
+              <Button asChild size="lg" className="px-8 py-3.5">
+                <Link
+                  to={
+                    currentUser.role === 'PATIENT'
+                      ? '/patient/dashboard'
+                      : currentUser.role === 'NUTRITIONIST'
+                        ? '/nutritionist/dashboard'
+                        : '/admin'
+                  }
+                  className="no-underline inline-flex items-center gap-2"
+                >
+                  <Rocket size={18} /> Go to Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="lg" className="px-8 py-3.5">
+                <Link to="/auth" className="no-underline inline-flex items-center gap-2">
+                  <Rocket size={18} /> Get Started Free
+                </Link>
+              </Button>
+            )}
 
             <Button
               variant="secondary"

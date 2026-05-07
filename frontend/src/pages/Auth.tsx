@@ -4,17 +4,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi, usersApi } from '@/services/shared/api';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  Button,
-  Input,
-  Label,
-  Checkbox,
-} from '@/components/ui';
 import { toast } from 'sonner';
 
 type AuthPage = 'login' | 'register' | 'forgot' | 'reset';

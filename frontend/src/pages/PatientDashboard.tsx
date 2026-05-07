@@ -77,8 +77,9 @@ export default function PatientDashboard() {
     >
       <DiaryProvider>
         <SubscriptionProvider>
-          <PatientChatbot />
+          
           <Suspense fallback={<RouteLoader />}>
+          <PatientChatbot />
             <Routes>
               <Route index element={<PatientHome />} />
               <Route path="ai" element={<PatientAITracker />} />

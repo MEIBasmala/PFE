@@ -12,3 +12,7 @@ export { default as PatientBlogPost } from './PatientBlogPost';
 export { default as PatientMessages } from './PatientMessages';
 export { default as PatientSupport } from './PatientSupport';
 export { default as PatientProfile } from './PatientProfile';
+export { default as PatientChatbot } from './PatientChatbot';
+export { default as ProgressPhotos } from './ProgressPhotos';
+
+
