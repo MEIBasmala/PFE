@@ -12,6 +12,7 @@ import {
   Trash2,
   X,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { useDiary } from "@/contexts/DiaryContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -72,7 +73,6 @@ function calculateCalorieGoal(profile: PatientProfile | null): { goal: number; m
     return { goal: DEFAULT_GOAL, missing };
   }
 
-  // Mifflin‑St Jeor for women (assume female – adjust if gender is added)
   const weightKg = profile.weight!;
   const heightCm = profile.height!;
   const age = profile.age!;
@@ -113,8 +113,9 @@ export default function PatientAITracker() {
   const { aiScansPerDay, aiScansUsedToday, refreshSubscription } = useSubscription();
   const profile = useAsync<PatientProfile>(() => getPatientProfile(), [], { toastOnError: false });
   const [filter, setFilter] = useState<MealCategory | "all">("all");
+  const [scanModalOpen, setScanModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,38 +130,49 @@ export default function PatientAITracker() {
     [logs, filter],
   );
 
-  const onFile = (f: File | null) => {
-    if (!f) return;
-    setPendingFile(f);
-    setPreviewUrl(URL.createObjectURL(f));
-  };
-
-  const clearUpload = () => {
-    setPendingFile(null);
+  const resetModal = () => {
+    setSelectedFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleFileSelect = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+
   const analyze = async () => {
-    if (!pendingFile) return;
+    if (!selectedFile) return;
     if (remaining <= 0) {
       toast.error("Daily AI scan limit reached. Upgrade your plan to unlock more.");
       return;
     }
     setAnalyzing(true);
-    const created = await uploadImage(pendingFile);
+    const created = await uploadImage(selectedFile);
     setAnalyzing(false);
     if (created) {
-      clearUpload();
+      resetModal();
+      setScanModalOpen(false);
       await refreshSubscription();
+      toast.success("Meal analysed and added to your diary!");
     }
-  };
-
-  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0] ?? null;
-    onFile(file);
   };
 
   const dateObj = new Date(date);
@@ -188,13 +200,11 @@ export default function PatientAITracker() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Quick stats row */}
           <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-3 text-center text-sm md:grid-cols-5">
             <StatItem icon="🔥" value={totals.calories} label="kcal" />
             <StatItem icon="✨" value={Math.max(0, goal - totals.calories)} label="Remaining" />
           </div>
 
-          {/* Category filters */}
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <Badge
@@ -209,7 +219,6 @@ export default function PatientAITracker() {
             ))}
           </div>
 
-          {/* Food log list */}
           <div className="space-y-2">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
@@ -226,7 +235,6 @@ export default function PatientAITracker() {
 
       {/* Right sidebar */}
       <div className="space-y-6">
-        {/* Profile reminder (if missing fields) */}
         {needsProfile && (
           <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
             <AlertCircle className="h-4 w-4" />
@@ -248,40 +256,16 @@ export default function PatientAITracker() {
             <Badge variant="secondary">{remaining}/{aiScansPerDay} today</Badge>
           </CardHeader>
           <CardContent>
-            {!previewUrl ? (
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileInputRef.current?.click()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={onDrop}
-                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6 text-center transition-colors hover:bg-muted/30"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-                />
-                <CloudUpload className="mx-auto h-9 w-9 text-muted-foreground" />
-                <div className="mt-2 font-semibold">Drop your meal photo here</div>
-                <div className="text-xs text-muted-foreground">or click to browse</div>
+            <div
+              onClick={() => setScanModalOpen(true)}
+              className="group relative cursor-pointer rounded-lg border-2 border-dashed border-border bg-muted/20 p-8 text-center transition-all hover:border-primary/50 hover:bg-muted/30"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative z-10">
+                <CloudUpload className="mx-auto h-10 w-10 text-muted-foreground transition-transform group-hover:scale-105" />
+                <div className="mt-2 font-semibold">Click here to upload you meal image</div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <img src={previewUrl} alt="Meal preview" className="max-h-64 w-full rounded-lg object-cover" />
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" onClick={clearUpload}>
-                    <X className="mr-1 h-3 w-3" /> Remove
-                  </Button>
-                  <Button size="sm" onClick={analyze} disabled={analyzing || remaining <= 0}>
-                    <Sparkles className="mr-1 h-3 w-3" /> {analyzing ? "Analyzing…" : "Analyze"}
-                  </Button>
-                </div>
-              </div>
-            )}
+            </div>
             {remaining <= 0 && (
               <p className="mt-3 text-xs text-destructive">
                 You've used all AI scans for today. Upgrade your plan to scan more meals.
@@ -308,12 +292,146 @@ export default function PatientAITracker() {
       </div>
 
       {/* Manual Entry Dialog */}
-      <ManualEntryModal open={manualOpen} onOpenChange={setManualOpen} onSubmit={addLog} />
+      <ManualEntryModal open={manualOpen} onOpenChange={setManualOpen} onSubmit={addLog} date={date} />
+
+      {/* AI Scan Modal – mimics ProgressPhotos modal style */}
+      <Dialog open={scanModalOpen} onOpenChange={(open) => {
+        if (!open) resetModal();
+        setScanModalOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScanLine className="h-5 w-5 text-primary" />
+              AI Calorie Scanner
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {!previewUrl ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
+                className="group relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/20 p-8 text-center transition-all hover:border-primary/50 hover:bg-muted/30"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
+                />
+                <CloudUpload className="mx-auto h-10 w-10 text-muted-foreground transition-transform group-hover:scale-105" />
+                <p className="mt-2 text-sm font-medium">Click or drag & drop</p>
+                <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+              </div>
+            ) : (
+              <div className="relative overflow-hidden rounded-lg border border-border">
+                <div className="relative overflow-hidden rounded-lg">
+                  <div className={`transition-transform duration-700 ${analyzing ? 'scale-95' : 'scale-100'}`}>
+                    <img src={previewUrl} alt="Meal preview" className="max-h-64 w-full object-cover" />
+                  </div>
+
+                  {analyzing && (
+  <>
+    {/* Warm radial gradient overlay */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent rounded-lg" />
+
+    {/* Slow breathing glow (orange) */}
+    <div className="absolute inset-0 rounded-lg border-2 border-[hsl(var(--orange))]/60 animate-slow-pulse" />
+
+    {/* Slow expanding rings (6s cycle) */}
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="relative w-40 h-40">
+        <div className="absolute inset-0 rounded-full border-2 border-[hsl(var(--orange))]/40 animate-slow-ping" />
+        <div className="absolute inset-0 rounded-full border-2 border-[hsl(var(--saffron))]/30 animate-slow-ping [animation-delay:2s]" />
+        <div className="absolute inset-0 rounded-full border border-[hsl(var(--green))]/20 animate-slow-ping [animation-delay:4s]" />
+      </div>
+    </div>
+
+    {/* Slow floating particles (7s cycle) */}
+    {[...Array(8)].map((_, i) => (
+      <div
+        key={i}
+        className="absolute w-1.5 h-1.5 rounded-full animate-slow-float-particle pointer-events-none"
+        style={{
+          left: `${15 + Math.random() * 70}%`,
+          top: `${20 + Math.random() * 60}%`,
+          backgroundColor: i % 3 === 0 ? "hsl(var(--orange))" : i % 3 === 1 ? "hsl(var(--saffron))" : "hsl(var(--green))",
+          animationDelay: `${Math.random() * 3}s`,
+        }}
+      />
+    ))}
+
+    {/* Warm corner brackets – slower pulse */}
+    <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+    <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+    <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+    <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+
+    {/* AI badge – slow pulse */}
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 text-[11px] font-mono text-[hsl(var(--orange))] flex items-center gap-2 shadow-lg">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--orange))] opacity-75 [animation-duration:3s]"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--orange))]"></span>
+      </span>
+      AI analysing...
+    </div>
+  </>
+)}
+                </div>
+
+                {!analyzing && (
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      if (previewUrl) URL.revokeObjectURL(previewUrl);
+                      setPreviewUrl(null);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setScanModalOpen(false)}
+              disabled={analyzing}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={analyze}
+              disabled={!selectedFile || analyzing || remaining <= 0}
+              className="gap-1.5"
+            >
+              {analyzing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Analysing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Analyze meal
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-// Helper components (StatItem, DiaryEntry, ManualEntryModal) – same as before but kept concise
+// Helper components (unchanged)
 function StatItem({ icon, value, label }: { icon: string; value: number | string; label: string }) {
   return (
     <div>
@@ -350,10 +468,11 @@ function DiaryEntry({ log, onDelete }: { log: UIFoodLog; onDelete: () => void })
 interface ManualEntryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: Omit<UIFoodLog, "id" | "loggedAt">) => Promise<void>;
+  onSubmit: (payload: Omit<UIFoodLog, "id" | "loggedAt"> & { loggedAt?: string }) => Promise<void>;
+  date: string;
 }
 
-function ManualEntryModal({ open, onOpenChange, onSubmit }: ManualEntryModalProps) {
+function ManualEntryModal({ open, onOpenChange, onSubmit, date }: ManualEntryModalProps) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<MealCategory>("breakfast");
   const [calories, setCalories] = useState("");
@@ -371,6 +490,7 @@ function ManualEntryModal({ open, onOpenChange, onSubmit }: ManualEntryModalProp
         category,
         calories: Number(calories),
         source: "manual",
+        loggedAt: `${date}T12:00:00.000Z`,
       });
       onOpenChange(false);
       setName("");

@@ -11,6 +11,7 @@ import {
   Tooltip,
   Cell,
 } from "recharts";
+
 import {
   CalendarPlus,
   Camera,
@@ -31,12 +32,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDiary } from "@/contexts/DiaryContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import {
+  getMyProgressPhotos,
+  addProgressPhoto,
   getMyAppointments,
   getMyProgress,
   addProgress,
   getMyFoodLogs,
   getPatientProfile,
 } from "@/services/api";
+
+import ProgressPhotos from './ProgressPhotos';
+
 import { addDays, formatShortDate, startOfWeek, toIsoDate } from "@/lib/date";
 import { apiCache, cachedFetch } from "@/lib/apiCache";
 import type {
@@ -75,10 +81,10 @@ const TTL = {
 };
 
 const MEAL_COLORS: Record<string, string> = {
-  breakfast: "#f59e0b",
-  lunch: "#10b981",
-  dinner: "#6366f1",
-  snack: "#f97316",
+  breakfast: "hsl(var(--saffron))",
+  lunch: "hsl(var(--orange))",
+  dinner: "hsl(var(--green-dark))",
+  snack: "hsl(var(--green))",   
 };
 
 export default function PatientHome() {
@@ -109,61 +115,7 @@ export default function PatientHome() {
   });
 
   const weekStart = useMemo(() => startOfWeek(), []);
-  const [weekData, setWeekData] = useState<
-    { date: string; calories: number }[]
-  >(
-    () =>
-      apiCache.get<{ date: string; calories: number }[]>(`week:${weekStart}`) ??
-      [],
-  );
-  const [weekLoading, setWeekLoading] = useState(weekData.length === 0);
-
-  useEffect(() => {
-    const key = `week:${weekStart}`;
-    const cached = apiCache.get<{ date: string; calories: number }[]>(key);
-    if (cached) {
-      setWeekData(cached);
-      setWeekLoading(false);
-      return;
-    }
-    let alive = true;
-    (async () => {
-      setWeekLoading(true);
-      try {
-        const days = Array.from({ length: 7 }, (_, i) =>
-          toIsoDate(addDays(weekStart, i)),
-        );
-        const results = await Promise.all(
-          days.map(async (d) => {
-            try {
-              const items: UIFoodLog[] = await cachedFetch(
-                `foodlogs:${d}`,
-                () => getMyFoodLogs(d),
-                300_000,
-              );
-              return {
-                date: d,
-                calories: (items ?? []).reduce(
-                  (s, l) => s + (l.calories || 0),
-                  0,
-                ),
-              };
-            } catch {
-              return { date: d, calories: 0 };
-            }
-          }),
-        );
-        if (!alive) return;
-        setWeekData(results);
-        apiCache.set(key, results, TTL.week);
-      } finally {
-        if (alive) setWeekLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [weekStart]);
+  const { weekData, weekLoading } = useDiary();
 
   const goal = profile.data?.dailyCalorieGoal ?? DEFAULT_GOAL;
   const caloriesPct = Math.min(100, Math.round((totals.calories / goal) * 100));
@@ -397,7 +349,7 @@ export default function PatientHome() {
 
       {/* ── MEALS + CHART ────────────────────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-  <AnimateOnScroll animation="fade-up" delay={0.1} className="h-full">
+        <AnimateOnScroll animation="fade-up" delay={0.1} className="h-full">
 
           <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -496,15 +448,15 @@ export default function PatientHome() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between text-base">
                 <span className="flex items-center gap-2">
-                  <ChartPie className="h-4 w-4 text-[hsl(var(--saffron))]" /> This
+                  <ChartPie className="h-4 w-4 text-[hsl(var(--orange))]" /> This
                   week
                 </span>
-                <Badge variant="outline" className="font-normal text-xs">
+                <Badge variant="secondary" className="font-normal text-xs">
                   avg {avgWeekly} kcal
                 </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent  className="flex flex-col flex-1">
+            <CardContent className="flex flex-col flex-1">
               {weekLoading ? (
                 <Skeleton className="h-44 w-full" />
               ) : (
@@ -572,8 +524,8 @@ export default function PatientHome() {
 
       {/* ── MEASUREMENTS + PROGRESS ──────────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-2">
-  <AnimateOnScroll animation="fade-up" delay={0.1} className="h-full">
-    <Card className="h-full">
+        <AnimateOnScroll animation="fade-up" delay={0.1} className="h-full">
+          <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Ruler className="h-4 w-4" /> Measurements
@@ -621,11 +573,11 @@ export default function PatientHome() {
           </Card>
         </AnimateOnScroll>
 
-         <AnimateOnScroll animation="fade-up" delay={0.2} className="h-full">
-    <Card className="h-full">
+        <AnimateOnScroll animation="fade-up" delay={0.2} className="h-full">
+          <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="h-4 w-4 text-[hsl(var(--green-dark))]" />{" "}
+                <TrendingUp className="h-4 w-4 text-[hsl(var(--saffron))]" />{" "}
                 Progress
               </CardTitle>
               <Button
@@ -679,7 +631,7 @@ export default function PatientHome() {
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-20 rounded-full bg-muted overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-[hsl(var(--green-dark))] transition-all"
+                              className="h-full rounded-full bg-[hsl(var(--green))] transition-all"
                               style={{
                                 width: goalWeight
                                   ? `${Math.min(100, Math.max(5, ((p.weight - goalWeight) / (Math.max(startWeight ?? p.weight, p.weight) - goalWeight || 1)) * 100))}%`
@@ -744,6 +696,11 @@ export default function PatientHome() {
           await Promise.all([profile.refetch(), progress.refetch()]);
         }}
       />
+
+      {/* ── PROGRESS PHOTOS ── */}
+      <div className="mt-6">
+        <ProgressPhotos />
+      </div>
     </div>
   );
 }
@@ -780,7 +737,7 @@ function StatTile({
   const numericValue = parseInt(value);
   const isNumeric = !isNaN(numericValue) && value !== "—";
   return (
-     <Card
+    <Card
       className={cn(
         "h-full min-h-[130px]",   // ← add these
         onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
@@ -811,7 +768,7 @@ function StatTile({
         {typeof progress === "number" && (
           <ProgressBar value={progress} className="mt-2 h-1" />
         )}
-         <div className="flex-1" />
+        <div className="flex-1" />
         {extra}
       </CardContent>
     </Card>

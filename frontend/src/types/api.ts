@@ -301,6 +301,15 @@ export interface Progress {
   recordedAt: ISODateString;
 }
 
+export interface ProgressPhoto {
+  id: number;
+  patientId: number;
+  photoUrl: string;
+  month: string;   // YYYY-MM
+  notes?: string;
+  createdAt: ISODateString;
+}
+
 // ============================================================
 // Recipes
 // ============================================================

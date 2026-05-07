@@ -10,3 +10,14 @@ export const getMyProgress = async (): Promise<Progress[]> => {
 };
 export const addProgress = (payload: { weight: number; measurements?:Measurement; notes?: string }) =>
   api.post<Progress>('/progress', payload);
+
+
+import type { ProgressPhoto } from '@/types/api';
+
+export const getMyProgressPhotos = async (): Promise<ProgressPhoto[]> => {
+  const res = await api.get<{ success: boolean; photos: ProgressPhoto[] }>('/progress/photos');
+  return res.photos;
+};
+
+export const addProgressPhoto = (data: { photoUrl: string; month: string; notes?: string }) =>
+  api.post<{ success: boolean; photo: ProgressPhoto }>('/progress/photos', data);

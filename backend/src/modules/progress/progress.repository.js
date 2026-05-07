@@ -30,6 +30,45 @@ const getNutritionistByUserId = async (userId) => {
   return await prisma.nutritionist.findUnique({ where: { userId } });
 };
 
+const createProgressPhoto = async (data) => {
+  const { patientId, month, photoUrl } = data;
+  return await prisma.progressPhoto.upsert({
+    where: {
+      patientId_month: {  
+        patientId: patientId,
+        month: month,
+      },
+    },
+    update: {
+      photoUrl: photoUrl, // replace the old photo with the new one
+    },
+    create: {
+      patientId: patientId,
+      month: month,
+      photoUrl: photoUrl,
+    },
+  });
+};
+const getPatientProgressPhotos = async (patientId) => {
+  return await prisma.progressPhoto.findMany({
+    where: { patientId },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
+const getLastProgressPhoto = async (patientId) => {
+  return await prisma.progressPhoto.findFirst({
+    where: { patientId },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
+const deleteProgressPhoto = async (id, patientId) => {
+  return await prisma.progressPhoto.deleteMany({
+    where: { id, patientId },
+  });
+};
+
 module.exports = {
   getPatientProgress,
   getProgressById,
@@ -37,4 +76,8 @@ module.exports = {
   updateProgressNotes,
   getPatientByUserId,
   getNutritionistByUserId,
+  createProgressPhoto,
+  getPatientProgressPhotos,
+  getLastProgressPhoto,
+  deleteProgressPhoto
 };

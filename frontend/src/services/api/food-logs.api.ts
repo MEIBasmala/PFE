@@ -1,8 +1,25 @@
 // src/services/api/food-logs.api.ts
-import { api, apiFetch, getToken } from './client';
+import { api } from './client';
 import type { FoodLog, UIFoodLog, MealCategory, FoodLogUploadResult } from '@/types/api';
 
-// Transform backend FoodLog to UI‑friendly UIFoodLog
+// ── Cloudinary helper ─────────────────────────────────────────────────────────
+const uploadToCloudinary = async (file: File): Promise<string> => {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', import.meta.env.VITE_CLOUDINARY_FOOD_PRESET);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: fd }
+  );
+
+  if (!res.ok) throw new Error('Cloudinary upload failed');
+  const data = await res.json();
+  return data.secure_url;
+};
+
+// ── Transformations ───────────────────────────────────────────────────────────
+
 const toUIFoodLog = (log: FoodLog): UIFoodLog => {
   const detected = (log.detectedFoods as any) || {};
   return {
@@ -17,13 +34,14 @@ const toUIFoodLog = (log: FoodLog): UIFoodLog => {
   };
 };
 
-// Inverse transformation: UI log to backend FoodLog (for create/update)
 const toBackendFoodLog = (
   uiLog: Omit<UIFoodLog, 'id' | 'loggedAt'> & { loggedAt?: string }
 ) => ({
   totalCalories: uiLog.calories,
   imageUrl: uiLog.imageUrl,
-  estimatedAt: uiLog.loggedAt ? new Date(uiLog.loggedAt).toISOString() : new Date().toISOString(),
+  estimatedAt: uiLog.loggedAt
+    ? new Date(uiLog.loggedAt).toISOString()
+    : new Date().toISOString(),
   detectedFoods: {
     name: uiLog.name,
     category: uiLog.category,
@@ -32,37 +50,13 @@ const toBackendFoodLog = (
   },
 });
 
-export const foodApi = {
-  analyzeFood: async (imageFile: File) => {
-    const token = getToken();
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/analyze`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
-    if (!res.ok) throw new Error('Food analysis failed');
-    return res.json(); // expects { name, category, calories, imageUrl? }
-  },
-};
+// ── Main API functions ────────────────────────────────────────────────────────
 
-// Legacy object – kept for compatibility
-export const foodLogsApi = {
-  getLogs: (params?: { date?: string }) => {
-    const query = params?.date ? `?date=${params.date}` : '';
-    return apiFetch<any[]>(`/food-logs${query}`);
-  },
-  createLog: (data: any) => apiFetch<any>('/food-logs', { method: 'POST', body: JSON.stringify(data) }),
-  updateLog: (id: string, data: any) =>
-    apiFetch<any>(`/food-logs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteLog: (id: string) => apiFetch<void>(`/food-logs/${id}`, { method: 'DELETE' }),
-};
-
-// Main functions used by the DiaryContext
 export const getMyFoodLogs = async (date?: string): Promise<UIFoodLog[]> => {
   const qs = date ? `?date=${encodeURIComponent(date)}` : '';
-  const backendLogs = await api.get<FoodLog[]>(`/food-logs/my${qs}`);
+  const res = await api.get<any>(`/food-logs/my${qs}`);
+  // guard against wrapped response: { logs: [...] } or plain array
+  const backendLogs: FoodLog[] = Array.isArray(res) ? res : (res?.logs ?? []);
   return backendLogs.map(toUIFoodLog);
 };
 
@@ -71,11 +65,19 @@ export const getFoodLog = async (id: string): Promise<UIFoodLog> => {
   return toUIFoodLog(log);
 };
 
-export const uploadFoodLogImage = async (file: File, category?: MealCategory): Promise<FoodLogUploadResult> => {
-  const fd = new FormData();
-  fd.append('image', file);
-  if (category) fd.append('category', category);
-  const result = await api.post<{ log: FoodLog; scansRemaining?: number }>('/food-logs/upload', fd);
+export const uploadFoodLogImage = async (
+  file: File,
+  category?: MealCategory
+): Promise<FoodLogUploadResult> => {
+  // 1. Upload image to Cloudinary (fixes the FormData/JSON.stringify bug)
+  const imageUrl = await uploadToCloudinary(file);
+
+  // 2. Send the URL + category to your backend as plain JSON
+  const result = await api.post<{ log: FoodLog; scansRemaining?: number }>(
+    '/food-logs/upload',
+    { imageUrl, category }
+  );
+
   return {
     log: toUIFoodLog(result.log),
     scansRemaining: result.scansRemaining,
@@ -90,8 +92,10 @@ export const createFoodLog = async (
   return toUIFoodLog(created);
 };
 
-export const updateFoodLog = async (id: string, patch: Partial<UIFoodLog>): Promise<UIFoodLog> => {
-  // Fetch current log to merge detectedFoods
+export const updateFoodLog = async (
+  id: string,
+  patch: Partial<UIFoodLog>
+): Promise<UIFoodLog> => {
   const current = await api.get<FoodLog>(`/food-logs/${id}`);
   const currentDetected = (current.detectedFoods as any) || {};
   const mergedDetected = {
@@ -108,7 +112,6 @@ export const updateFoodLog = async (id: string, patch: Partial<UIFoodLog>): Prom
   const updated = await api.put<FoodLog>(`/food-logs/${id}`, backendPatch);
   return toUIFoodLog(updated);
 };
-
 
 export const deleteFoodLog = (id: string) =>
   api.delete<{ ok: true }>(`/food-logs/${id}`);

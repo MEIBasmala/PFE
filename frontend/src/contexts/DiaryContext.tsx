@@ -1,9 +1,14 @@
 // src/contexts/DiaryContext.tsx
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { getMyFoodLogs, createFoodLog, deleteFoodLog, foodApi } from '@/services/api';
-import type { UIFoodLog, MealCategory } from '@/types/api';
+import { getMyFoodLogs, createFoodLog, deleteFoodLog, uploadFoodLogImage } from '@/services/api';
+import type { UIFoodLog , MealCategory} from '@/types/api';
 import { toIsoDate } from '@/lib/date';
 import { toast } from 'sonner';
+
+export interface DayCalories {
+  date: string;   // YYYY-MM-DD
+  calories: number;
+}
 
 interface DiaryContextValue {
   date: string;
@@ -11,19 +16,51 @@ interface DiaryContextValue {
   logs: UIFoodLog[];
   loading: boolean;
   totals: { calories: number };
-  addLog: (entry: Omit<UIFoodLog, 'id' | 'loggedAt'>) => Promise<void>;
+  addLog: (entry: Omit<UIFoodLog, 'id' | 'loggedAt'> & { loggedAt?: string }) => Promise<void>;
   deleteLog: (id: number) => Promise<void>;
   refresh: () => Promise<void>;
-  uploadImage: (file: File) => Promise<boolean>;
+  uploadImage: (file: File, category?: MealCategory) => Promise<boolean>;
+  // ── week chart data ──────────────────────────────────────
+  weekData: DayCalories[];
+  weekLoading: boolean;
 }
 
 const DiaryContext = createContext<DiaryContextValue | undefined>(undefined);
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+/** Returns the Monday of the week containing `date` */
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sun
+  const diff = day === 0 ? -6 : 1 - day; // adjust to Monday
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Returns an array of 7 ISO date strings Mon→Sun for the week containing `isoDate` */
+function getWeekDates(isoDate: string): string[] {
+  const monday = getWeekStart(new Date(isoDate));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    return toIsoDate(d);
+  });
+}
+
+// ── provider ──────────────────────────────────────────────────────────────────
 
 export const DiaryProvider = ({ children }: { children: ReactNode }) => {
   const [date, setDate] = useState<string>(() => toIsoDate(new Date()));
   const [logs, setLogs] = useState<UIFoodLog[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // week chart state
+  const [weekData, setWeekData] = useState<DayCalories[]>([]);
+  const [weekLoading, setWeekLoading] = useState(false);
+
+  // ── fetch single day ────────────────────────────────────────────────────────
   const fetchLogs = useCallback(async (targetDate: string) => {
     setLoading(true);
     try {
@@ -37,25 +74,44 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // ── fetch whole week ────────────────────────────────────────────────────────
+  const fetchWeek = useCallback(async (isoDate: string) => {
+    setWeekLoading(true);
+    try {
+      const days = getWeekDates(isoDate);
+      // fetch all 7 days in parallel
+      const results = await Promise.all(days.map(d => getMyFoodLogs(d)));
+      setWeekData(
+        days.map((d, i) => ({
+          date: d,
+          calories: results[i].reduce((sum, log) => sum + log.calories, 0),
+        }))
+      );
+    } catch (error) {
+      console.error('Failed to fetch week data', error);
+    } finally {
+      setWeekLoading(false);
+    }
+  }, []);
+
+  // re-fetch day + week whenever the selected date changes
   useEffect(() => {
     fetchLogs(date);
-  }, [date, fetchLogs]);
+    fetchWeek(date);
+  }, [date, fetchLogs, fetchWeek]);
 
+  // ── totals ──────────────────────────────────────────────────────────────────
   const totals = logs.reduce(
-    (acc, log) => ({
-      calories: acc.calories + log.calories,
-    }),
+    (acc, log) => ({ calories: acc.calories + log.calories }),
     { calories: 0 }
   );
 
-  const addLog = async (entry: Omit<UIFoodLog, 'id' | 'loggedAt'>) => {
+  // ── actions ─────────────────────────────────────────────────────────────────
+  const addLog = async (entry: Omit<UIFoodLog, 'id' | 'loggedAt'> & { loggedAt?: string }) => {
     try {
-      const newLog = await createFoodLog(entry);
-      if (newLog.loggedAt?.startsWith(date)) {
-        setLogs(prev => [newLog, ...prev]);
-      } else {
-        await fetchLogs(date);
-      }
+      await createFoodLog(entry);
+      // always refetch both — keeps diary list and chart in sync
+      await Promise.all([fetchLogs(date), fetchWeek(date)]);
     } catch (error) {
       console.error('Failed to add log', error);
       toast.error('Failed to add meal entry');
@@ -67,6 +123,8 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
     try {
       await deleteFoodLog(String(id));
       setLogs(prev => prev.filter(log => log.id !== id));
+      // update the week bar for today
+      await fetchWeek(date);
     } catch (error) {
       console.error('Failed to delete log', error);
       toast.error('Failed to delete entry');
@@ -75,19 +133,13 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refresh = async () => {
-    await fetchLogs(date);
+    await Promise.all([fetchLogs(date), fetchWeek(date)]);
   };
 
-  const uploadImage = async (file: File): Promise<boolean> => {
-    try {
-      const result = await foodApi.analyzeFood(file);
-      await addLog({
-        name: result.name || 'Meal',
-        category: result.category || 'lunch',
-        calories: result.calories || 0,
-        source: 'ai',
-        imageUrl: result.imageUrl,
-      });
+  const uploadImage = async (file: File, category?: MealCategory): Promise<boolean> => {
+  try {
+    await uploadFoodLogImage(file, category);
+      await Promise.all([fetchLogs(date), fetchWeek(date)]);
       return true;
     } catch (error) {
       console.error('AI analysis failed:', error);
@@ -108,6 +160,8 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
         deleteLog,
         refresh,
         uploadImage,
+        weekData,
+        weekLoading,
       }}
     >
       {children}

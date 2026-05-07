@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./services/progressPhotoReminder');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,7 +12,7 @@ const { createServer } = require('./config/socket');
 const app = express();
 app.use(cookieParser());
 
-// ── FIX: Serve uploaded files statically ──
+//  Serve uploaded files statically 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const { server } = createServer(app);

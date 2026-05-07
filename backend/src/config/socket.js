@@ -22,7 +22,7 @@ const initSocket = (httpServer) => {
     pingInterval: 10_000,
   });
 
-  // ── Auth middleware ──────────────────────────────────────────────────────
+  // Auth middleware
   io.use((socket, next) => {
     const token =
       socket.handshake.auth?.token ||
@@ -38,13 +38,13 @@ const initSocket = (httpServer) => {
     }
   });
 
-  // ── Connection handler ───────────────────────────────────────────────────
+  // Connection handler
   io.on("connection", (socket) => {
     const userId = socket.userId;
     console.log(`[Socket] User ${userId} connected (${socket.userRole})`);
     socket.join(`user:${userId}`);
 
-    // ── send_message ──────────────────────────────────────────────────────
+    // send_message
     socket.on("send_message", async ({ receiverId, content, imageUrl }) => {
       try {
         const receiverIdInt = parseInt(receiverId);
@@ -106,7 +106,7 @@ const initSocket = (httpServer) => {
       }
     });
 
-    // ── mark_read ─────────────────────────────────────────────────────────
+    // mark_read
     socket.on("mark_read", async ({ messageId }) => {
       try {
         const msg = await prisma.message.findUnique({
@@ -123,7 +123,7 @@ const initSocket = (httpServer) => {
       }
     });
 
-    // ── disconnect ────────────────────────────────────────────────────────
+    // disconnect
     socket.on("disconnect", () => {
       console.log(`[Socket] User ${userId} disconnected`);
     });

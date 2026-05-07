@@ -27,4 +27,21 @@ const addNotes = async (userId, progressId, notes) => {
   return await progressRepo.updateProgressNotes(progressId, notes);
 };
 
-module.exports = { getMyProgress, addProgress, addNotes };
+const addProgressPhoto = async (userId, { photoUrl, month, notes }) => {
+  const patient = await progressRepo.getPatientByUserId(userId);
+  if (!patient) throw new Error('Patient profile not found');
+  return await progressRepo.createProgressPhoto({
+    patientId: patient.id,
+    photoUrl,
+    month,
+    notes,
+  });
+};
+
+const getMyProgressPhotos = async (userId) => {
+  const patient = await progressRepo.getPatientByUserId(userId);
+  if (!patient) throw new Error('Patient profile not found');
+  return await progressRepo.getPatientProgressPhotos(patient.id);
+};
+
+module.exports = { getMyProgress, addProgress, addNotes , addProgressPhoto, getMyProgressPhotos };

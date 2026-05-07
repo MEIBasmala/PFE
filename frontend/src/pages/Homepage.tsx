@@ -44,6 +44,10 @@ import {
   X,
 } from 'lucide-react';
 
+// ── NEW: API imports ─────────────────────────────────────────
+import { getBlogArticles } from '@/services/api/blog.api';
+import { getPackages } from '@/services/api/subscriptions.api';
+
 import '../styles/homepage.css';
 
 /* ─── Image URLs ─── */
@@ -85,12 +89,10 @@ export interface PricingPlan {
 }
 
 interface HomepageProps {
-  blogPosts?: BlogPost[];
-  blogLoading?: boolean;
   onContactSubmit?: (payload: ContactPayload) => Promise<void>;
 }
 
-/* ─── Data ─── */
+/* ─── Fallback Data (used if API fails) ─── */
 const DEFAULT_BLOG_POSTS: BlogPost[] = [
   {
     id: 1,
@@ -203,13 +205,74 @@ const testimonials = [
 
 /* ─── Component ─── */
 const Homepage = ({
-  blogPosts = DEFAULT_BLOG_POSTS,
-  blogLoading = false,
   onContactSubmit,
 }: HomepageProps) => {
   const [showModal, setShowModal] = useState(false);
   const [contactForm, setContactForm] = useState<ContactPayload>({ name: '', email: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
+
+  // ── NEW: Dynamic blog state ───────────────────────────────
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
+  const [blogLoading, setBlogLoading] = useState(true);
+
+  // ── NEW: Dynamic pricing state ────────────────────────────
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>(DEFAULT_PRICING_PLANS);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  // ── Fetch blog posts on mount ─────────────────────────────
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        const articles = await getBlogArticles({});
+        const formatted = articles.slice(0, 3).map(article => ({
+          id: article.id,
+          title: article.title,
+          category: article.category || 'General',
+          excerpt: article.content?.substring(0, 120) + '...' || '',
+          author: article.admin?.user?.fullName || 'KhabirLens Team',
+          date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          readTime: `${Math.ceil((article.content?.length || 0) / 1000)} min read`,
+          likes: article.likes || 0,
+          comments: article.comments?.length || 0,
+          imageUrl: article.coverImage,
+        }));
+        setBlogPosts(formatted);
+      } catch (error) {
+        console.error('Failed to load blog posts', error);
+        // Keep DEFAULT_BLOG_POSTS as fallback
+      } finally {
+        setBlogLoading(false);
+      }
+    };
+    fetchBlog();
+  }, []);
+
+  // ── Fetch pricing plans on mount ────────────────────────
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const packages = await getPackages();
+        const mapped = packages.map(pkg => ({
+          name: pkg.name,
+          price: pkg.isSeasonal
+            ? `${pkg.price} DZD`
+            : `${pkg.priceMonthly} DZD`,
+          period: pkg.isSeasonal ? '/one‑time' : '/month',
+          features: pkg.features,
+          cta: pkg.name === 'Starter' ? 'Start Free' : `Choose ${pkg.name}`,
+          featured: pkg.highlight,
+          badge: pkg.highlight ? 'Most Popular' : null,
+        }));
+        setPricingPlans(mapped);
+      } catch (error) {
+        console.error('Failed to load packages', error);
+        // Keep DEFAULT_PRICING_PLANS as fallback
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   /* Scroll reveal observer */
   useEffect(() => {
@@ -551,7 +614,7 @@ const Homepage = ({
       <Separator className="mx-[6%]" />
 
       {/* ═══════════════════════════════════════
-          BLOG PREVIEW
+          BLOG PREVIEW (DYNAMIC)
       ═══════════════════════════════════════ */}
       <section className="blog-section" id="blog-section">
         <div className="reveal text-center">
@@ -797,7 +860,7 @@ const Homepage = ({
       <Separator className="mx-[6%]" />
 
       {/* ═══════════════════════════════════════
-          PRICING
+          PRICING (DYNAMIC)
       ═══════════════════════════════════════ */}
       <section
         id="pricing"
@@ -832,50 +895,65 @@ const Homepage = ({
           </div>
 
           <div className="grid grid-cols-3 gap-5 mt-10 max-w-[1100px] mx-auto max-lg:grid-cols-2 max-md:grid-cols-1">
-            {DEFAULT_PRICING_PLANS.map((plan) => (
-              <Card
-                key={plan.name}
-                className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
-                  plan.featured ? 'border-[hsl(var(--green))]' : ''
-                }`}
-                style={{
-                  background: plan.featured
-                    ? 'rgba(194, 230, 110, 0.25)'
-                    : 'rgba(255, 255, 255, 0.85)',
-                  backdropFilter: 'blur(4px)',
-                }}
-              >
-                {plan.badge && (
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[hsl(var(--green))] text-white text-[0.65rem] font-bold px-3 py-0.5 rounded-full whitespace-nowrap z-10 shadow-sm">
-                    {plan.badge}
-                  </div>
-                )}
-                <CardContent className="p-6 text-center">
-                  <div className="font-syne text-xl font-bold mb-1">{plan.name}</div>
-                  <div className="font-syne text-2xl font-extrabold text-[hsl(var(--green-dark))]">
-                    {plan.price}
-                    <span className="text-sm font-normal text-[hsl(var(--text-m))] ml-1">
-                      {plan.period}
-                    </span>
-                  </div>
-                  <ul className="space-y-2 my-5 text-sm text-left">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-[hsl(var(--text-m))]">
-                        <Check size={14} className="text-[hsl(var(--green-dark))] flex-shrink-0" />
-                        <span className="text-[0.8rem]">{feature}</span>
-                      </li>
+            {plansLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="p-6">
+                  <Skeleton className="h-6 w-24 mx-auto mb-2" />
+                  <Skeleton className="h-10 w-32 mx-auto mb-4" />
+                  <div className="space-y-2">
+                    {Array.from({ length: 4 }).map((__, j) => (
+                      <Skeleton key={j} className="h-4 w-full" />
                     ))}
-                  </ul>
-                  <Button
-                    className="w-full"
-                    variant={plan.featured ? 'default' : 'outline'}
-                    onClick={() => setShowModal(true)}
-                  >
-                    {plan.cta}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                  </div>
+                  <Skeleton className="h-10 w-full mt-5" />
+                </Card>
+              ))
+            ) : (
+              pricingPlans.map((plan) => (
+                <Card
+                  key={plan.name}
+                  className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+                    plan.featured ? 'border-[hsl(var(--green))]' : ''
+                  }`}
+                  style={{
+                    background: plan.featured
+                      ? 'rgba(194, 230, 110, 0.25)'
+                      : 'rgba(255, 255, 255, 0.85)',
+                    backdropFilter: 'blur(4px)',
+                  }}
+                >
+                  {plan.badge && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[hsl(var(--green))] text-white text-[0.65rem] font-bold px-3 py-0.5 rounded-full whitespace-nowrap z-10 shadow-sm">
+                      {plan.badge}
+                    </div>
+                  )}
+                  <CardContent className="p-6 text-center">
+                    <div className="font-syne text-xl font-bold mb-1">{plan.name}</div>
+                    <div className="font-syne text-2xl font-extrabold text-[hsl(var(--green-dark))]">
+                      {plan.price}
+                      <span className="text-sm font-normal text-[hsl(var(--text-m))] ml-1">
+                        {plan.period}
+                      </span>
+                    </div>
+                    <ul className="space-y-2 my-5 text-sm text-left">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-2 text-[hsl(var(--text-m))]">
+                          <Check size={14} className="text-[hsl(var(--green-dark))] flex-shrink-0" />
+                          <span className="text-[0.8rem]">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      className="w-full"
+                      variant={plan.featured ? 'default' : 'outline'}
+                      onClick={() => setShowModal(true)}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
 
           <div className="text-center mt-10">
