@@ -1,7 +1,4 @@
 /* ===== HOMEPAGE-SPECIFIC STYLES ===== */
-/* Note: Cards, buttons, tables, tags, forms, modals, and skeletons
-   are now handled by @/components/ui primitives. Only homepage-unique
-   layout and section styles live here. */
 
 /* ─── Blog Section ─── */
 .blog-section {

@@ -3,8 +3,18 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi, usersApi } from '@/services/shared/api';
-
 import { toast } from 'sonner';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Button,
+  Input,
+  Label,
+  Checkbox,
+} from '@/components/ui';
 
 type AuthPage = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -40,7 +50,6 @@ const Auth = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [resetNewPass, setResetNewPass] = useState('');
   const [resetConfirm, setResetConfirm] = useState('');
-  const [alert, setAlert] = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -69,10 +78,8 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setAlert(null);
     try {
       const user = await login(loginEmail, loginPassword);
-
       if (user.role === 'PATIENT') {
         try {
           const profileRes = await usersApi.getProfile();
@@ -85,13 +92,11 @@ const Auth = () => {
           return;
         }
       }
-
       const routes: Record<string, string> = {
         PATIENT: '/patient',
         NUTRITIONIST: '/nutritionist',
         ADMIN: '/admin',
       };
-
       const destination = routes[user.role];
       if (!destination) {
         toast.error(`Unknown role: ${user.role}`);
@@ -112,7 +117,6 @@ const Auth = () => {
       return;
     }
     setLoading(true);
-    setAlert(null);
     try {
       await register(regName, regEmail, regPassword);
       toast.success('Account created! Redirecting to complete your profile...');
@@ -171,13 +175,11 @@ const Auth = () => {
     }
   };
 
-  // Shared styles to match original design
-  const inputClass = "w-full bg-[hsl(var(--cream-bg))] border-2 border-[hsl(var(--gray-line))] rounded-2xl px-4 py-3 font-sans text-[0.9rem] text-kl-text-dark outline-none transition-all focus:border-kl-orange focus:shadow-[0_0_0_3px_hsl(var(--orange-20))]";
-  const gradientButtonClass = "w-full py-3.5 rounded-[60px] font-bold text-[0.95rem] cursor-pointer border-none bg-gradient-to-br from-[#ffa257] to-[#ffb07c] text-white shadow-[0_4px_14px_rgba(255,162,87,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(255,162,87,0.35)] disabled:opacity-70 flex items-center justify-center gap-2";
+  const strength = getPasswordStrength(regPassword);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden warm-bg p-6">
-      {/* Floating foods */}
+      {/* Floating foods – same as original */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {floatingFoodsPositions.map((item, i) => (
           <span
@@ -210,161 +212,247 @@ const Auth = () => {
           </Link>
         </div>
 
-        {/* Card – semi-transparent like original */}
-        <div className="rounded-[32px] bg-white/10 p-8 shadow-lg backdrop-blur-sm border border-white/30 transition-all hover:shadow-xl relative overflow-hidden">
+        {/* Card – enhanced shadow + glassmorphic effect */}
+        <Card className="relative overflow-hidden rounded-lg bg-white/10 backdrop-blur-sm border border-white/30 shadow-kl-card transition-all hover:shadow-[0_24px_56px_rgba(0,0,0,0.16)]">
           {/* Decorative emojis */}
           <span className="absolute -top-2.5 -left-2.5 text-3xl opacity-10 pointer-events-none rotate-[-15deg]">🥗</span>
           <span className="absolute -bottom-2.5 -right-2.5 text-3xl opacity-10 pointer-events-none rotate-[15deg]">🥑</span>
 
-          <div className="text-center mb-6">
-            <h1 className="font-syne text-3xl font-extrabold bg-gradient-to-br from-kl-text-dark to-kl-orange bg-clip-text text-transparent">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="font-syne text-3xl font-extrabold bg-gradient-to-br from-[hsl(var(--text-dark))] to-[hsl(var(--orange))] bg-clip-text text-transparent">
               {page === 'login' && 'Welcome Back'}
               {page === 'register' && 'Create Account'}
               {page === 'forgot' && 'Reset Password'}
               {page === 'reset' && 'Set New Password'}
-            </h1>
-            <p className="text-kl-text-m text-sm mt-1">
+            </CardTitle>
+            <CardDescription className="text-[hsl(var(--text-m))] text-sm mt-1 font-sans">
               {page === 'login' && 'Log in to access your health dashboard'}
               {page === 'register' && 'Join KhabirLens as a patient'}
               {page === 'forgot' && "We'll send a reset link to your email"}
               {page === 'reset' && 'Create a strong password for your account'}
-            </p>
-          </div>
+            </CardDescription>
+          </CardHeader>
 
-          {page === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">Email Address</label>
-                <input
-                  type="email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="user@example.com"
-                  className={inputClass}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">Password</label>
-                <input
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className={inputClass}
-                  required
-                />
-              </div>
-              <div className="flex justify-between items-center">
-                <label className="flex items-center gap-1.5 text-kl-text-m text-sm">
-                  <input type="checkbox" className="accent-kl-green" /> Remember me
-                </label>
-                <button type="button" className="text-kl-text-m hover:text-kl-orange bg-transparent border-none cursor-pointer text-sm" onClick={() => setPage('forgot')}>
-                  Forgot password?
-                </button>
-              </div>
-              <button type="submit" disabled={loading} className={gradientButtonClass}>
-                {loading ? 'Logging in...' : 'Log In →'}
-              </button>
-              <div className="flex items-center gap-3 my-4 text-kl-text-l text-sm">
-                <span className="flex-1 h-px bg-kl-gray-line"></span><span>or</span><span className="flex-1 h-px bg-kl-gray-line"></span>
-              </div>
-              <button type="button" onClick={() => setPage('register')} className="w-full py-3.5 rounded-[60px] font-bold text-sm cursor-pointer bg-transparent text-kl-text-m border-2 border-kl-gray-line transition-all hover:border-kl-green hover:text-kl-green-dark hover:bg-kl-green-light">
-                Create new account
-              </button>
-            </form>
-          )}
-
-          {page === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">Full Name</label>
-                <input type="text" value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="Your Name" className={inputClass} required />
-              </div>
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">Email Address</label>
-                <input type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} placeholder="user@example.com" className={inputClass} required />
-              </div>
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">Password</label>
-                <input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} placeholder="••••••••" className={inputClass} required />
-                <div className="mt-2">
-                  <div className="flex justify-between text-xs font-semibold text-kl-text-l px-0.5 mb-1">
-                    <span>Weak</span><span>Fair</span><span>Good</span><span>Strong</span>
+          <CardContent>
+            {page === 'login' && (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1">
+                  <Label htmlFor="login-email" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="login-password" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Password
+                  </Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="remember" />
+                    <Label htmlFor="remember" className="text-sm font-normal text-[hsl(var(--text-m))]">
+                      Remember me
+                    </Label>
                   </div>
-                  <div className="flex gap-1">
-                    {[0,1,2,3].map(i => (
-                      <div key={i} className={`h-1 flex-1 rounded-sm transition-all ${strengthClass(i, getPasswordStrength(regPassword))}`} />
-                    ))}
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-[hsl(var(--text-m))] hover:text-[hsl(var(--orange))]"
+                    onClick={() => setPage('forgot')}
+                  >
+                    Forgot password?
+                  </Button>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Logging in...' : 'Log In →'}
+                </Button>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-[hsl(var(--gray-line))]" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-transparent px-2 text-[hsl(var(--text-l))]">or</span>
                   </div>
                 </div>
-              </div>
-              <button type="submit" disabled={loading} className={gradientButtonClass}>
-                {loading ? 'Creating...' : 'Create Account →'}
-              </button>
-              <div className="flex items-center gap-3 my-4 text-kl-text-l text-sm">
-                <span className="flex-1 h-px bg-kl-gray-line"></span><span>or</span><span className="flex-1 h-px bg-kl-gray-line"></span>
-              </div>
-              <button type="button" onClick={() => setPage('login')} className="w-full py-3.5 rounded-[60px] font-bold text-sm cursor-pointer bg-transparent text-kl-text-m border-2 border-kl-gray-line transition-all hover:border-kl-green hover:text-kl-green-dark hover:bg-kl-green-light">
-                Sign in to existing account
-              </button>
-            </form>
-          )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setPage('register')}
+                >
+                  Create new account
+                </Button>
+              </form>
+            )}
 
-          {page === 'forgot' && (
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">Email Address</label>
-                <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="user@example.com" className={inputClass} required />
-              </div>
-              <button type="submit" disabled={loading} className={gradientButtonClass}>
-                {loading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-              <button type="button" onClick={() => setPage('login')} className="w-full text-center text-kl-text-m text-sm hover:text-kl-orange mt-2">
-                ← Back to login
-              </button>
-            </form>
-          )}
+            {page === 'register' && (
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-1">
+                  <Label htmlFor="reg-name" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="reg-name"
+                    type="text"
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="Your Name"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="reg-email" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="reg-email"
+                    type="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="reg-password" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Password
+                  </Label>
+                  <Input
+                    id="reg-password"
+                    type="password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <div className="mt-2">
+                    <div className="flex justify-between text-xs font-semibold text-[hsl(var(--text-l))] px-0.5 mb-1">
+                      <span>Weak</span><span>Fair</span><span>Good</span><span>Strong</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3].map(i => (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-sm transition-all ${strengthClass(i, strength)}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create Account →'}
+                </Button>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-[hsl(var(--gray-line))]" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-transparent px-2 text-[hsl(var(--text-l))]">or</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setPage('login')}
+                >
+                  Sign in to existing account
+                </Button>
+              </form>
+            )}
 
-          {page === 'reset' && (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">New Password</label>
-                <input type="password" value={resetNewPass} onChange={(e) => setResetNewPass(e.target.value)} placeholder="Enter new password" className={inputClass} required />
-              </div>
-              <div>
-                <label className="block text-[0.75rem] font-bold text-kl-text-m uppercase tracking-wider mb-1">Confirm Password</label>
-                <input type="password" value={resetConfirm} onChange={(e) => setResetConfirm(e.target.value)} placeholder="Re-enter new password" className={inputClass} required />
-              </div>
-              <button type="submit" disabled={loading} className={gradientButtonClass}>
-                {loading ? 'Resetting...' : 'Reset Password →'}
-              </button>
-              <button type="button" onClick={() => setPage('login')} className="w-full text-center text-kl-text-m text-sm hover:text-kl-orange mt-2">
-                ← Back to login
-              </button>
-            </form>
-          )}
+            {page === 'forgot' && (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-1">
+                  <Label htmlFor="forgot-email" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Sending...' : 'Send Reset Link'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="w-full text-center"
+                  onClick={() => setPage('login')}
+                >
+                  ← Back to login
+                </Button>
+              </form>
+            )}
 
-          <div className="mt-4 pt-3 border-t border-dashed border-kl-gray-line flex items-center justify-center gap-1.5 text-xs text-kl-text-l">
-            🔒 This is a secure, encrypted connection
-          </div>
-        </div>
+            {page === 'reset' && (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-1">
+                  <Label htmlFor="reset-password" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    New Password
+                  </Label>
+                  <Input
+                    id="reset-password"
+                    type="password"
+                    value={resetNewPass}
+                    onChange={(e) => setResetNewPass(e.target.value)}
+                    placeholder="Enter new password"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="reset-confirm" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="reset-confirm"
+                    type="password"
+                    value={resetConfirm}
+                    onChange={(e) => setResetConfirm(e.target.value)}
+                    placeholder="Re-enter new password"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Resetting...' : 'Reset Password →'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="w-full text-center"
+                  onClick={() => setPage('login')}
+                >
+                  ← Back to login
+                </Button>
+              </form>
+            )}
+
+            <div className="mt-6 pt-3 border-t border-dashed border-[hsl(var(--gray-line))] flex items-center justify-center gap-1.5 text-xs text-[hsl(var(--text-l))] font-sans">
+              🔒 This is a secure, encrypted connection
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <style>{`
-        @keyframes floatAround {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          25% { transform: translate(20px, -15px) rotate(5deg); }
-          50% { transform: translate(35px, 5px) rotate(10deg); }
-          75% { transform: translate(10px, 20px) rotate(5deg); }
-        }
-        .animate-floatAround {
-          animation: floatAround 25s infinite ease-in-out;
-        }
-        .warm-bg {
-          background: linear-gradient(135deg, #fef9f0 0%, #fff5e6 100%);
-        }
-      `}</style>
     </div>
   );
 };

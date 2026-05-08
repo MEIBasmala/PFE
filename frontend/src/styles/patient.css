@@ -1,9 +1,3 @@
-/* =============================================================
-   KhabirLens — Patient Dashboard (Modern redesign)
-   Matches the look & feel of Homepage / About / Contact.
-   Depends on: index.css (design tokens & base components)
-   ============================================================= */
-
 /* ── Welcome banner – glassmorphic, gradient accent ── */
 .kl-welcome-banner {
   position: relative;

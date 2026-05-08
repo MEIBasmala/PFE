@@ -1,6 +1,4 @@
 /* src/styles/nutritionist.css */
-/* Nutritionist dashboard specific styles – extends index.css */
-
 /* Stats grid (reuse patient stats) – already in index.css, but ensure consistency */
 .stats-grid {
   display: grid;
