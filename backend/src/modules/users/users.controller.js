@@ -38,8 +38,23 @@ const changePassword = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  try {
+    const targetUserId = parseInt(req.params.id);
+    const user = await usersService.getUserById(
+      targetUserId,
+      req.user.id,
+      req.user.role
+    );
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    const status = error.message.includes('denied') ? 403 : 404;
+    res.status(status).json({ success: false, message: error.message });
+  }
+};
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
+  getUserById,
 };

@@ -19,4 +19,4 @@ const getPatientById = async (req, res) => {
   }
 };
 
-module.exports = { getMyPatients, getPatientById };
+module.exports = { getMyPatients, getPatientById  };

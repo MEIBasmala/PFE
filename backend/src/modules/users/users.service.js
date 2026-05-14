@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const usersRepo = require('./users.repository');
+const prisma = require('../../config/db');
 
 //  Get Profile (with computed isProfileComplete for patients)
 const getProfile = async (userId, role) => {
@@ -92,8 +93,102 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
   return { message: 'Password changed successfully' };
 };
 
+
+const getUserById = async (targetUserId, requestingUserId, requestingRole) => {
+  // 1) Fetch target user (safe fields only, no password)
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      isActive: true,
+      // password excluded
+    },
+  });
+  if (!targetUser) throw new Error('User not found');
+
+  // 2) ADMIN can see everyone
+  if (requestingRole === 'ADMIN') return targetUser;
+
+  // 3) Self access always allowed
+  if (requestingUserId === targetUserId) return targetUser;
+
+  // 4) NUTRITIONIST -> can only see patients they have an appointment with
+  if (requestingRole === 'NUTRITIONIST') {
+    if (targetUser.role !== 'PATIENT') {
+      throw new Error('Access denied: nutritionists can only view patient profiles');
+    }
+
+    // Get the nutritionist's own record (contains the internal nutritionist.id)
+    const nutritionistRecord = await prisma.nutritionist.findUnique({
+      where: { userId: requestingUserId },
+      select: { id: true },
+    });
+    if (!nutritionistRecord) throw new Error('Nutritionist profile not found');
+
+    // Get the patient's record (contains patient.id)
+    const patientRecord = await prisma.patient.findUnique({
+      where: { userId: targetUserId },
+      select: { id: true },
+    });
+    if (!patientRecord) throw new Error('Patient profile not found');
+
+    // Check for any appointment linking them
+    const appointmentExists = await prisma.appointment.findFirst({
+      where: {
+        nutritionistId: nutritionistRecord.id,
+        patientId: patientRecord.id,
+      },
+    });
+    if (!appointmentExists) {
+      throw new Error('Access denied: no appointment exists with this patient');
+    }
+    return targetUser;
+  }
+
+  // 5) PATIENT -> can only see nutritionists they have an appointment with
+  if (requestingRole === 'PATIENT') {
+    if (targetUser.role !== 'NUTRITIONIST') {
+      throw new Error('Access denied: patients can only view nutritionist profiles');
+    }
+
+    // Get patient's own record
+    const patientRecord = await prisma.patient.findUnique({
+      where: { userId: requestingUserId },
+      select: { id: true },
+    });
+    if (!patientRecord) throw new Error('Patient profile not found');
+
+    // Get the target nutritionist's record
+    const nutritionistRecord = await prisma.nutritionist.findUnique({
+      where: { userId: targetUserId },
+      select: { id: true },
+    });
+    if (!nutritionistRecord) throw new Error('Nutritionist profile not found');
+
+    // Check for any appointment linking them
+    const appointmentExists = await prisma.appointment.findFirst({
+      where: {
+        patientId: patientRecord.id,
+        nutritionistId: nutritionistRecord.id,
+      },
+    });
+    if (!appointmentExists) {
+      throw new Error('Access denied: no appointment exists with this nutritionist');
+    }
+    return targetUser;
+  }
+
+  // Fallback for any other role (should not happen)
+  throw new Error('Access denied: insufficient permissions');
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
+  getUserById,
+
 };

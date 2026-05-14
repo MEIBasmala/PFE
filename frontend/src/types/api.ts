@@ -156,12 +156,12 @@ export interface Appointment {
   jitsiLink?: string;
   notes?: string;
   createdAt: ISODateString;
-  scheduledAt: ISODateString; // derived from slot.date + slot.startTime
+  scheduledAt: ISODateString; 
   durationMinutes: number;
   nutritionist: {
     id: number;
     fullName: string;
-    userId?: number; // FIX: Added userId so we can navigate to messaging
+    userId?: number; 
   };
 }
 

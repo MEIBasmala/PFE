@@ -247,13 +247,17 @@ const Navbar = () => {
                   >
                     <Home size={14} /> Profile
                   </Link>
-                  <Link
-                    to={`${dashboardPath}/ai`}
-                    onClick={() => setAvatarOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-kl-text-m hover:bg-kl-green-light hover:text-kl-green-dark transition-colors"
-                  >
-                    <ScanLineIcon size={14} /> Scan a meal
-                  </Link>
+                  { /* if role is patient show scan a meal link */ }
+
+                  {user.role?.toUpperCase() === 'PATIENT' && (
+                    <Link
+                      to={`patient/ai`} 
+                      onClick={() => setAvatarOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-kl-text-m hover:bg-kl-green-light hover:text-kl-green-dark transition-colors"
+                    >
+                      <ScanLineIcon size={14} /> Scan a meal
+                    </Link>
+                  )}
                   <div className="mx-3 my-1 h-px bg-kl-gray-line" />
                   <button
                     onClick={() => { logout(); setAvatarOpen(false); }}

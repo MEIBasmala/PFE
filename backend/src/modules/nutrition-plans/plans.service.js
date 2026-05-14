@@ -1,6 +1,7 @@
 const plansRepo = require('./plans.repository');
 const sendEmail = require('../../config/email');
 const { createNotification } = require('../notifications/notifications.service');
+const usersRepo = require('../users/users.repository');
 
 const getMyPlans = async (userId, role) => {
   if (role === 'PATIENT') {
@@ -22,7 +23,7 @@ const getPlanById = async (planId) => {
   return plan;
 };
 
-// New: get prebuilt templates (public)
+// Get prebuilt templates (public)
 const getPrebuiltPlans = async () => {
   return await plansRepo.getPrebuiltPlans();
 };
@@ -31,7 +32,6 @@ const createPlan = async (userId, planData) => {
   const nutritionist = await plansRepo.getNutritionistByUserId(userId);
   if (!nutritionist) throw new Error('Nutritionist profile not found');
 
-  // If it's a template, patientId and nutritionistId can be null (or set nutritionistId)
   const { patientId, startDate, endDate, isTemplate, name, durationDays } = planData;
 
   const plan = await plansRepo.createPlan({
@@ -45,35 +45,42 @@ const createPlan = async (userId, planData) => {
     durationDays: durationDays || null,
   });
 
+  // Notify patient if this is a real plan (not a template) — non-blocking
   if (!isTemplate && patientId) {
-    // --- NOTIFY THE PATIENT ---
-    try {
-      // patientId here is the patient's User.id (since frontend sends patient's user id)
-      const patientUser = await require('../users/users.repository').findById(patientId);
-      if (patientUser) {
-        await createNotification(
-          patientUser.id,
-          'PLAN',
-          `A new nutrition plan has been created for you (${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}). Check your dashboard.`
-        );
+    setImmediate(async () => {
+      try {
+        const patientUser = await usersRepo.findById(patientId);
+        if (patientUser) {
+          await createNotification(
+            patientUser.id,
+            'PLAN',
+            `A new nutrition plan has been created for you (${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}). Check your dashboard.`
+          );
+        }
+      } catch (err) {
+        console.error('[Plan] Failed to create plan notification:', err.message);
       }
-    } catch (err) {
-      console.error('Failed to create plan notification:', err.message);
-    }
-    try {
-      const patient = await require('../users/users.repository').findById(
-        (await plansRepo.getPatientByUserId(patientId))?.userId
-      );
-      await sendEmail({
-        to: patient?.email,
-        subject: 'KhabirLens — New Nutrition Plan 🥗',
-        html: `<h2>New Nutrition Plan!</h2>
-             <p>Your nutritionist has created a new nutrition plan for you.</p>`,
-      });
-    } catch (e) {
-      console.log('Email failed:', e.message);
-    }
+
+      try {
+        // patientId here is the Patient table row id — resolve to User for email
+        const patientProfile = await plansRepo.getPatientByUserId(patientId);
+        if (patientProfile) {
+          const patientUser = await usersRepo.findById(patientProfile.userId);
+          if (patientUser) {
+            await sendEmail({
+              to: patientUser.email,
+              subject: 'KhabirLens — New Nutrition Plan 🥗',
+              html: `<h2>New Nutrition Plan!</h2>
+                     <p>Your nutritionist has created a new nutrition plan for you.</p>`,
+            });
+          }
+        }
+      } catch (e) {
+        console.error('[Plan] Email failed:', e.message);
+      }
+    });
   }
+
   return plan;
 };
 
@@ -86,23 +93,25 @@ const updatePlan = async (userId, planId, data) => {
   const oldStatus = plan.status;
   const updated = await plansRepo.updatePlan(planId, data);
 
+  // Notify patient on activation — non-blocking
   if (data.status === 'ACTIVE' && oldStatus !== 'ACTIVE') {
-    try {
-      const patientUser = await require('../users/users.repository').findById(plan.patient?.userId);
-      if (patientUser) {
-        await createNotification(
-          patientUser.id,
-          'PLAN',
-          `Your nutrition plan is now active! You can view and follow it in your dashboard.`
-        );
+    setImmediate(async () => {
+      try {
+        const patientUser = await usersRepo.findById(plan.patient?.userId);
+        if (patientUser) {
+          await createNotification(
+            patientUser.id,
+            'PLAN',
+            `Your nutrition plan is now active! You can view and follow it in your dashboard.`
+          );
+        }
+      } catch (err) {
+        console.error('[Plan] Failed to send plan activation notification:', err.message);
       }
-    } catch (err) {
-      console.error('Failed to send plan activation notification:', err.message);
-    }
+    });
   }
 
   return updated;
-
 };
 
 const deletePlan = async (userId, planId) => {
@@ -161,5 +170,5 @@ module.exports = {
   addMeal,
   updateMeal,
   deleteMeal,
-  getPrebuiltPlans
+  getPrebuiltPlans,
 };

@@ -1,5 +1,5 @@
 // src/components/patient/PatientMessages.tsx
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import {
@@ -8,13 +8,23 @@ import {
   markMessageRead,
   sendMessage as sendMessageREST,
   uploadMessageImage,
-  getUserById,
+  getMyAppointments,
 } from "@/services/api";
 import { getToken } from "@/services/api/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAsync } from "@/hooks/useAsync";
 import { toast } from "sonner";
-import type { Conversation, Message } from "@/types/api";
+import type { Conversation, Message, Appointment } from "@/types/api";
 import MessagesUI from "@/components/ui/MessagesUI";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const SOCKET_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
@@ -25,19 +35,20 @@ export default function PatientMessages() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Read navigation state ONCE on mount into a stable ref.
-  // This is the User.id (not nutritionist table id) of who to open a chat with.
+  // Navigation state: the userId (not nutritionist table id) of who to open chat with
   const initialOpenWithRef = useRef<number | null>(
     (location.state as { openConversationWith?: number } | null)
       ?.openConversationWith ?? null
   );
 
+  // Dialog state
+  const [showAppointmentRequiredDialog, setShowAppointmentRequiredDialog] = useState(false);
+  const [pendingNutritionistId, setPendingNutritionistId] = useState<number | null>(null);
+
+  // Messaging state
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(true);
-  // Pre-seed activeId from nav state so the chat panel opens immediately
-  const [activeId, setActiveId] = useState<number | null>(
-    initialOpenWithRef.current
-  );
+  const [activeId, setActiveId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -48,72 +59,42 @@ export default function PatientMessages() {
     activeIdRef.current = activeId;
   }, [activeId]);
 
-  // Clear nav state so a browser refresh doesn't re-open the same conversation
-  useEffect(() => {
-    if (initialOpenWithRef.current) {
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Load patient's appointments – needed for validation
+  const appointmentsResult = useAsync(() => getMyAppointments(), []);
+  const appointments = appointmentsResult.data || [];
+
+  // Helper: check if the patient has any confirmed/completed appointment with a given nutritionist (by userId)
+  const hasAppointmentWithNutritionist = useCallback(
+    (nutritionistUserId: number) => {
+      return appointments.some((appt: Appointment) => {
+        const nutriUserId = (appt.nutritionist as any)?.userId;
+        return (
+          nutriUserId === nutritionistUserId &&
+          (appt.status === "CONFIRMED" || appt.status === "COMPLETED")
+        );
+      });
+    },
+    [appointments]
+  );
 
   // ── Load conversations ────────────────────────────────────────────────────
-  // KEY FIX: after fetching real conversations, if we were navigated here with
-  // a specific userId AND that person has no prior messages (so they won't
-  // appear in the list), we fetch their basic info and inject a synthetic
-  // "pending" conversation entry so they show up in the sidebar.
   const loadConversations = useCallback(async () => {
     try {
       const data = await getMyConversations();
-
-      const targetId = initialOpenWithRef.current;
-
-      if (targetId != null) {
-        const alreadyInList = data.some((c) => Number(c.id) === targetId);
-
-        if (!alreadyInList) {
-          // Fetch the user's basic info to build a synthetic conversation entry
-          try {
-            const { user: targetUser } = await getUserById(targetId);
-            const pending: Conversation = {
-              id: targetId,
-              participant: {
-                id: targetUser.id,
-                fullName: targetUser.fullName,
-                role: targetUser.role,
-              },
-              unreadCount: 0,
-              // No lastMessage yet — that's fine, the UI handles undefined
-            };
-            // Put the pending conversation at the top
-            setConversations([pending, ...data]);
-          } catch {
-            // If the lookup fails just show what we have
-            setConversations(data);
-          }
-        } else {
-          setConversations(data);
-        }
-
-        // Always honour the explicitly requested conversation
-        setActiveId(targetId);
-      } else {
-        setConversations(data);
-        // Auto-select first only if nothing is active
-        setActiveId((prev) => {
-          if (prev != null) return prev;
-          return data.length ? Number(data[0].id) : null;
-        });
-      }
+      setConversations(data);
+      // If nothing active yet, select first conversation if exists
+      setActiveId((prev) => {
+        if (prev != null) return prev;
+        return data.length ? Number(data[0].id) : null;
+      });
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to load conversations"
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to load conversations");
     } finally {
       setLoadingConversations(false);
     }
-  }, []); // stable — no deps that change
+  }, []);
 
-  // ── Load messages for the active conversation ─────────────────────────────
+  // ── Load messages for active conversation ────────────────────────────────
   const loadMessages = useCallback(async (otherId: number) => {
     setLoadingMessages(true);
     try {
@@ -126,7 +107,7 @@ export default function PatientMessages() {
     }
   }, []);
 
-  // ── Socket.IO — one connection for the lifetime of the component ──────────
+  // ── Socket.IO setup ──────────────────────────────────────────────────────
   useEffect(() => {
     const socket = io(SOCKET_URL, {
       auth: { token: getToken() },
@@ -185,18 +166,17 @@ export default function PatientMessages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // ── Initial data load ─────────────────────────────────────────────────────
+  // ── Initial data load ────────────────────────────────────────────────────
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
 
-  // ── Load messages when active conversation changes ────────────────────────
   useEffect(() => {
     if (activeId == null) return;
     loadMessages(activeId);
   }, [activeId, loadMessages]);
 
-  // ── Mark incoming messages as read ────────────────────────────────────────
+  // ── Mark messages as read ────────────────────────────────────────────────
   useEffect(() => {
     if (!messages.length || !activeId || !user) return;
     messages
@@ -210,7 +190,27 @@ export default function PatientMessages() {
       });
   }, [messages, activeId, user]);
 
-  // ── Send text ─────────────────────────────────────────────────────────────
+  // ── Handle navigation from initialOpenWithRef (e.g., clicking "Message" from past appointment) ──
+  useEffect(() => {
+  const targetId = initialOpenWithRef.current;
+  // Don't run until appointments have finished loading, and only once
+  if (!targetId || appointmentsResult.loading) return;
+
+  // Consume the ref so this never fires again
+  initialOpenWithRef.current = null;
+  navigate(location.pathname, { replace: true, state: {} });
+
+  const hasAppt = hasAppointmentWithNutritionist(targetId);
+  if (!hasAppt) {
+    setShowAppointmentRequiredDialog(true);
+    setPendingNutritionistId(targetId);
+    return;
+  }
+
+  setActiveId(targetId);
+}, [appointmentsResult.loading, hasAppointmentWithNutritionist, location.pathname, navigate]);
+
+  // ── Send text ────────────────────────────────────────────────────────────
   const handleSend = async (text: string) => {
     if (!activeId) return;
     if (socketRef.current?.connected) {
@@ -233,9 +233,10 @@ export default function PatientMessages() {
     }
   };
 
-  // ── Send image ────────────────────────────────────────────────────────────
+  // ── Send image ───────────────────────────────────────────────────────────
   const handleSendImage = async (file: File) => {
     if (!activeId || !user) return;
+
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image too large. Max size is 5 MB.");
       return;
@@ -245,6 +246,7 @@ export default function PatientMessages() {
       toast.error("Only JPEG, PNG, WebP, and GIF images are allowed.");
       return;
     }
+
     try {
       const { imageUrl } = await uploadMessageImage(file);
       if (socketRef.current?.connected) {
@@ -267,7 +269,7 @@ export default function PatientMessages() {
     }
   };
 
-  // ── Send file ─────────────────────────────────────────────────────────────
+  // ── Send file ────────────────────────────────────────────────────────────
   const handleSendFile = async (file: File) => {
     if (!activeId || !user) return;
     if (file.size > 10 * 1024 * 1024) {
@@ -296,20 +298,65 @@ export default function PatientMessages() {
     }
   };
 
+
+  const conversationsWithPending = useMemo(() => {
+  if (activeId == null) return conversations;
+  if (conversations.some((c) => Number(c.id) === activeId)) return conversations;
+  // We don't have the name yet — show a placeholder
+  return [
+    {
+      id: activeId,
+      participant: { id: activeId, fullName: "New conversation", role: "NUTRITIONIST" as const },
+      unreadCount: 0,
+    },
+    ...conversations,
+  ];
+}, [conversations, activeId]);
+
   return (
-    <MessagesUI
-      conversations={conversations}
-      messages={messages}
-      currentUserId={user?.id}
-      activeId={activeId}
-      loadingConversations={loadingConversations}
-      loadingMessages={loadingMessages}
-      onSelectConversation={(id) => setActiveId(id)}
-      onSend={handleSend}
-      onSendImage={handleSendImage}
-      onSendFile={handleSendFile}
-      showSearch
-      pollIntervalSeconds={connected ? undefined : 10}
-    />
+    <>
+      <MessagesUI
+        conversations={conversationsWithPending}
+        messages={messages}
+        currentUserId={user?.id}
+        activeId={activeId}
+        loadingConversations={loadingConversations}
+        loadingMessages={loadingMessages}
+        onSelectConversation={(id) => setActiveId(id)}
+        onSend={handleSend}
+        onSendImage={handleSendImage}
+        onSendFile={handleSendFile}
+        showSearch
+        pollIntervalSeconds={connected ? undefined : 10}
+      />
+
+      <Dialog
+        open={showAppointmentRequiredDialog}
+        onOpenChange={setShowAppointmentRequiredDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>📅 Appointment Required</DialogTitle>
+            <DialogDescription>
+              You can only message a nutritionist after you have had at least one confirmed or
+              completed appointment with them. Book a consultation to start the conversation.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAppointmentRequiredDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setShowAppointmentRequiredDialog(false);
+                navigate("/patient/consultations");
+              }}
+            >
+              Book an appointment →
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

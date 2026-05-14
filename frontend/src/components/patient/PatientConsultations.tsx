@@ -238,9 +238,8 @@ function AppointmentCard({ appt, onCancel, onMessage, nutritionistUserIdMap }: {
   const nutri = typeof appt.nutritionist === "object" ? appt.nutritionist : null;
 
   // FIX: Resolve nutritionist userId from the map using nutritionist table id
-  const nutriTableId = nutri?.id;
-  const nutriUserId = nutriTableId ? nutritionistUserIdMap.get(nutriTableId) : undefined;
   const nutriName = nutri?.fullName ?? "Your nutritionist";
+  const nutriUserId = nutri?.userId;
 
   const getStatusBadge = () => {
     switch (appt.status) {
@@ -415,9 +414,9 @@ function BookingFlow({
                         </div>
                       </div>
                     </button>
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => onMessageNutritionist(n.userId)}>
+                    {/* <Button variant="outline" size="sm" className="w-full" onClick={() => onMessageNutritionist(n.userId)}>
                       <MessageSquare className="mr-1 h-3 w-3" /> Message {n.user.fullName.split(" ")[0]}
-                    </Button>
+                    </Button> */}
                   </div>
                 ))}
               </div>

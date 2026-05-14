@@ -74,8 +74,8 @@ function preprocessMarkdown(content: string): string {
 
 export default function PatientBlogPost() {
   const currentUser = getUser<{ id: number; role: string; fullName: string }>();
-const [commentText, setCommentText] = useState("");
-const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [article, setArticle] = useState<BlogArticle | null>(null);

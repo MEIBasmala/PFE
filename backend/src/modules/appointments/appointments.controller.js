@@ -18,6 +18,7 @@ const getPatientAppointments = async (req, res) => {
       nutritionist: {
         id: app.nutritionist.id,
         fullName: app.nutritionist.user.fullName,
+         userId: app.nutritionist.user.id,
       },
     }));
     res.status(200).json(transformed);  // plain array, no wrapper

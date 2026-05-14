@@ -1,7 +1,8 @@
 const appointmentsRepo = require('./appointments.repository');
 const sendEmail = require('../../config/email');
 const { createNotification } = require('../notifications/notifications.service');
-const prisma = require('../../config/db');   // needed for transaction
+const prisma = require('../../config/db');
+const usersRepo = require('../users/users.repository');
 
 // ----- Helper to get patient appointments -----
 const getPatientAppointments = async (userId) => {
@@ -70,20 +71,22 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
       data: { isBooked: true },
     });
 
-    // 6. After transaction commit, send notifications & email 
-    (async () => {
+    // 6. After transaction commit, send notifications & email (fire-and-forget, non-blocking)
+    setImmediate(async () => {
       try {
         const nutritionistUserId = appointment.nutritionist.user.id;
-        const patientUser = await require('../users/users.repository').findById(userId);
+        const patientUser = await usersRepo.findById(userId);
         await createNotification(
           nutritionistUserId,
           'APPOINTMENT',
           `New appointment request from ${patientUser.fullName} on ${slot.date.toLocaleDateString()} at ${slot.startTime}`
         );
-      } catch (e) { console.error('Notification error:', e.message); }
+      } catch (e) {
+        console.error('[Appointment] Notification error:', e.message);
+      }
 
       try {
-        const patientUser = await require('../users/users.repository').findById(userId);
+        const patientUser = await usersRepo.findById(userId);
         await sendEmail({
           to: patientUser.email,
           subject: 'KhabirLens — Appointment Booked 📅',
@@ -93,8 +96,10 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
                  <p>Time: ${slot.startTime} - ${slot.endTime}</p>
                  <p>Jitsi Link: <a href="${jitsiLink}">${jitsiLink}</a></p>`,
         });
-      } catch (e) { console.log('Email failed:', e.message); }
-    })();
+      } catch (e) {
+        console.error('[Appointment] Email error:', e.message);
+      }
+    });
 
     return appointment;
   });
@@ -112,8 +117,8 @@ const confirmAppointment = async (userId, appointmentId) => {
 
   const updated = await appointmentsRepo.updateAppointmentStatus(appointmentId, { status: 'CONFIRMED' });
 
-  // Notify patient (async)
-  (async () => {
+  // Notify patient (non-blocking)
+  setImmediate(async () => {
     try {
       const patientUserId = appointment.patient.user.id;
       const slot = appointment.slot;
@@ -122,8 +127,10 @@ const confirmAppointment = async (userId, appointmentId) => {
         'APPOINTMENT',
         `Your appointment on ${slot.date.toLocaleDateString()} at ${slot.startTime} has been confirmed. Join link: ${appointment.jitsiLink}`
       );
-    } catch (e) { console.error('Confirmation notification error:', e.message); }
-  })();
+    } catch (e) {
+      console.error('[Appointment] Confirmation notification error:', e.message);
+    }
+  });
 
   return updated;
 };
@@ -151,8 +158,8 @@ const cancelAppointment = async (userId, appointmentId, role) => {
   await appointmentsRepo.markSlotBooked(appointment.slotId, false);
   const cancelled = await appointmentsRepo.updateAppointmentStatus(appointmentId, { status: 'CANCELLED' });
 
-  // Notify the other party
-  (async () => {
+  // Notify the other party (non-blocking)
+  setImmediate(async () => {
     try {
       const otherUserId = (role === 'PATIENT')
         ? appointment.nutritionist.user.id
@@ -164,8 +171,10 @@ const cancelAppointment = async (userId, appointmentId, role) => {
         'APPOINTMENT',
         `Your appointment on ${slot.date.toLocaleDateString()} at ${slot.startTime} has been cancelled by ${canceller}.`
       );
-    } catch (e) { console.error('Cancellation notification error:', e.message); }
-  })();
+    } catch (e) {
+      console.error('[Appointment] Cancellation notification error:', e.message);
+    }
+  });
 
   return cancelled;
 };

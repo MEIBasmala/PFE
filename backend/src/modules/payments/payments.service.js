@@ -2,8 +2,10 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const paymentsRepo = require('./payments.repository');
 const sendEmail = require('../../config/email');
 const { createNotification } = require('../notifications/notifications.service');
+const subsRepo = require('../subscriptions/subscriptions.repository');
+const usersRepo = require('../users/users.repository');
 
-//  Create Payment Intent 
+//  Create Payment Intent
 const createPaymentIntent = async (userId, { packageId }) => {
   const patient = await paymentsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
@@ -11,7 +13,7 @@ const createPaymentIntent = async (userId, { packageId }) => {
   const existing = await paymentsRepo.getActiveSubscription(patient.id);
   if (existing) throw new Error('You already have an active subscription');
 
-  const pkg = await require('../subscriptions/subscriptions.repository').getPackageById(packageId);
+  const pkg = await subsRepo.getPackageById(packageId);
   if (!pkg) throw new Error('Package not found');
 
   const amountInDZD = pkg.isSeasonal ? pkg.price : pkg.priceMonthly;
@@ -19,13 +21,15 @@ const createPaymentIntent = async (userId, { packageId }) => {
     throw new Error('This plan is free – no payment required');
   }
 
-  // Convert DZD to USD (example rate: 1 USD = 135 DZD)
+  // Convert DZD to USD cents (rate: 1 USD ≈ 135 DZD)
+  // NOTE: This is a fixed rate used only for Stripe processing.
+  // The actual DZD amount is stored in metadata for reference.
   const USD_RATE = 135;
-  let amountUSD = Math.round((amountInDZD / USD_RATE) * 100); // cents
-  if (amountUSD < 50) amountUSD = 50; // enforce Stripe minimum $0.50
+  let amountUSD = Math.round((amountInDZD / USD_RATE) * 100); // in cents
+  if (amountUSD < 50) amountUSD = 50; // Stripe minimum $0.50
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: amountUSD,      // ✅ fixed
+    amount: amountUSD,
     currency: 'usd',
     metadata: {
       userId: userId.toString(),
@@ -43,10 +47,9 @@ const createPaymentIntent = async (userId, { packageId }) => {
     package: pkg,
   };
 };
-//  Handle Stripe Webhook 
-const handleWebhook = async (payload, signature) => {
-  console.log('🔔 Webhook endpoint hit');
 
+//  Handle Stripe Webhook
+const handleWebhook = async (payload, signature) => {
   let event;
 
   try {
@@ -55,10 +58,8 @@ const handleWebhook = async (payload, signature) => {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET
     );
-    console.log('✅ Event constructed:', event.type);
   } catch (err) {
-    console.error('❌ Webhook signature verification failed:', err.message);
-
+    console.error('[Payment] Webhook signature verification failed:', err.message);
     throw new Error(`Webhook signature verification failed: ${err.message}`);
   }
 
@@ -70,41 +71,37 @@ const handleWebhook = async (payload, signature) => {
       await handlePaymentFailed(event.data.object);
       break;
     default:
-      console.log(`Unhandled event type: ${event.type}`);
+      // Unhandled event types are silently ignored — this is expected Stripe behavior
+      break;
   }
 
   return { received: true };
 };
 
-//  Handle Payment Success 
+//  Handle Payment Success
 const handlePaymentSuccess = async (paymentIntent) => {
-  console.log('💰 Payment success webhook received for intent:', paymentIntent.id);
-  console.log('Metadata:', paymentIntent.metadata);
-
   const { userId, patientId, packageId } = paymentIntent.metadata;
   if (!userId || !patientId || !packageId) return;
+
   // Guard: don't process the same intent twice
   const alreadyProcessed = await paymentsRepo.getPaymentByIntentId(paymentIntent.id);
   if (alreadyProcessed) return;
-  console.log('Looking for packageId:', packageId);
 
-  const pkg = await require('../subscriptions/subscriptions.repository')
-    .getPackageById(parseInt(packageId));
+  const pkg = await subsRepo.getPackageById(parseInt(packageId));
   if (!pkg) return;
 
   const startDate = new Date();
   const endDate = new Date();
 
   if (pkg.isSeasonal && pkg.duration) {
-    // Parse "30 days", "8 weeks", "12 weeks", "4 weeks"
     const [num, unit] = pkg.duration.split(' ');
     const n = parseInt(num);
     if (unit.startsWith('day')) endDate.setDate(endDate.getDate() + n);
     if (unit.startsWith('week')) endDate.setDate(endDate.getDate() + n * 7);
   } else {
-    // Standard monthly plan
     endDate.setMonth(endDate.getMonth() + 1);
   }
+
   const subscription = await paymentsRepo.createSubscriptionAfterPayment({
     patientId: parseInt(patientId),
     packageId: parseInt(packageId),
@@ -116,52 +113,67 @@ const handlePaymentSuccess = async (paymentIntent) => {
 
   await paymentsRepo.createPayment({
     subscriptionId: subscription.id,
-    amount: paymentIntent.amount,   // DZD zero-decimal, no division
+    amount: paymentIntent.amount,
     status: 'SUCCESS',
     stripePaymentIntentId: paymentIntent.id,
   });
-  // --- NOTIFY THE PATIENT ---
-  try {
-    const userId = parseInt(paymentIntent.metadata.userId);
-    await createNotification(
-      userId,
-      'PAYMENT',
-      `Your payment for ${pkg.name} was successful. Your subscription is active until ${endDate.toLocaleDateString()}.`
-    );
-  } catch (err) {
-    console.error('Failed to send payment notification:', err.message);
-  }
-  try {
-    const user = await require('../users/users.repository').findById(parseInt(userId));
-    await sendEmail({
-      to: user.email,
-      subject: 'KhabirLens — Payment Confirmed 🎉',
-      html: `<h2>Payment Successful!</h2>
-             <p>Your ${pkg.name} subscription is now active.</p>
-             <p>Valid until: ${endDate.toLocaleDateString()}</p>`,
-    });
-  } catch (emailError) {
-    console.log('Email failed:', emailError.message);
-  }
+
+  // Notify the patient — non-blocking
+  setImmediate(async () => {
+    try {
+      await createNotification(
+        parseInt(userId),
+        'PAYMENT',
+        `Your payment for ${pkg.name} was successful. Your subscription is active until ${endDate.toLocaleDateString()}.`
+      );
+    } catch (err) {
+      console.error('[Payment] Failed to send payment notification:', err.message);
+    }
+
+    try {
+      const user = await usersRepo.findById(parseInt(userId));
+      if (user) {
+        await sendEmail({
+          to: user.email,
+          subject: 'KhabirLens — Payment Confirmed 🎉',
+          html: `<h2>Payment Successful!</h2>
+                 <p>Your ${pkg.name} subscription is now active.</p>
+                 <p>Valid until: ${endDate.toLocaleDateString()}</p>`,
+        });
+      }
+    } catch (emailError) {
+      console.error('[Payment] Email failed:', emailError.message);
+    }
+  });
 };
 
-//  Handle Payment Failed 
+//  Handle Payment Failed
 const handlePaymentFailed = async (paymentIntent) => {
   const existing = await paymentsRepo.getPaymentByIntentId(paymentIntent.id);
   if (existing) {
     await paymentsRepo.updatePaymentStatus(existing.id, 'FAILED');
   }
+
   const { userId } = paymentIntent.metadata;
   if (userId) {
-    await createNotification(parseInt(userId), 'PAYMENT', 'Your payment failed. Please try again or contact support.');
+    setImmediate(async () => {
+      try {
+        await createNotification(
+          parseInt(userId),
+          'PAYMENT',
+          'Your payment failed. Please try again or contact support.'
+        );
+      } catch (err) {
+        console.error('[Payment] Failed notification error:', err.message);
+      }
+    });
   }
 };
 
-//  Get Payment History 
+//  Get Payment History
 const getPaymentHistory = async (userId) => {
   const patient = await paymentsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
-
   return await paymentsRepo.getPatientPayments(patient.id);
 };
 

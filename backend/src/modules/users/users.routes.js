@@ -8,6 +8,8 @@ const prisma = require('../../config/db');
 router.get('/profile',         protect, usersController.getProfile);
 router.put('/profile',         protect, validateUpdateProfile, usersController.updateProfile);
 router.put('/change-password', protect, validateChangePassword, usersController.changePassword);
+router.get('/:id', protect, usersController.getUserById);
+
 
 // Accessible to any authenticated user — safe because password is excluded via select
 router.get('/role/:role', protect, async (req, res) => {
@@ -20,7 +22,7 @@ router.get('/role/:role', protect, async (req, res) => {
     }
 
     const users = await prisma.user.findMany({
-      where: { role, isActive: true },  // ← only active users
+      where: { role, isActive: true },  
       select: {
         id: true,
         fullName: true,
@@ -44,7 +46,7 @@ router.get('/role/:role', protect, async (req, res) => {
       },
     });
 
-    res.status(200).json(users); // ← keep plain array — appointments.api.ts expects array
+    res.status(200).json(users); 
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
