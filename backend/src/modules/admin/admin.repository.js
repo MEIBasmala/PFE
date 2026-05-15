@@ -1,5 +1,5 @@
 const prisma = require('../../config/db');
-const { PAGINATION, SUBSCRIPTION_STATUS, PAYMENT_STATUS } = require('./admin.config');
+const { PAGINATION, SUBSCRIPTION_STATUS, PAYMENT_STATUS, ROLES } = require('./admin.config');
 
 const getAllPatients = async () => {
   return await prisma.patient.findMany({
@@ -233,7 +233,7 @@ const getRecentPayments = async (limit = PAGINATION.RECENT_PAYMENTS_LIMIT) => {
   });
 };
 
-// ======================== BLOG MANAGEMENT ========================
+// BLOG MANAGEMENT
 const getAllBlogArticles = async () => {
   return await prisma.blogArticle.findMany({
     include: {

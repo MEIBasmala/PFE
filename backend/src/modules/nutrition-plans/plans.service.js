@@ -2,6 +2,8 @@ const plansRepo = require('./plans.repository');
 const sendEmail = require('../../config/email');
 const { createNotification } = require('../notifications/notifications.service');
 const usersRepo = require('../users/users.repository');
+const cloudinary = require('../../config/cloudinary');
+
 
 const getMyPlans = async (userId, role) => {
   if (role === 'PATIENT') {
@@ -161,6 +163,105 @@ const deleteMeal = async (userId, planId, mealId) => {
   return await plansRepo.deleteMeal(mealId);
 };
 
+// Helper to upload PDF buffer to Cloudinary
+const uploadPdfToCloudinary = (buffer, originalName) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'raw',
+        folder: 'meal_plans',
+        public_id: `pdf_${Date.now()}_${originalName.replace(/\.[^/.]+$/, '')}`,
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
+
+const createPdfPlan = async (nutritionistUserId, file, patientId, title, notes) => {
+  // 1. Get nutritionist profile
+  const nutritionist = await plansRepo.getNutritionistByUserId(nutritionistUserId);
+  if (!nutritionist) throw new Error('Nutritionist profile not found');
+
+  // 2. Validate patient exists
+  const patient = await plansRepo.getPatientByUserId(patientId);
+  if (!patient) throw new Error('Patient not found');
+
+  // 3. Upload PDF
+  const pdfUrl = await uploadPdfToCloudinary(file.buffer, file.originalname);
+
+  // 4. Create a NutritionPlan record with pdfUrl
+  const plan = await plansRepo.createPlan({
+    patientId: patient.id,
+    nutritionistId: nutritionist.id,
+    startDate: null,
+    endDate: null,
+    status: 'ACTIVE',          // PDF plans are immediately active
+    isTemplate: false,
+    name: title?.trim() || 'Meal Plan PDF',
+    pdfUrl,
+    pdfAssignedAt: new Date(),
+    pdfNotes: notes?.trim() || null,
+  });
+
+  // 5. Notify patient (async)
+  setImmediate(async () => {
+    try {
+      const patientUser = await usersRepo.findById(patient.userId);
+      if (patientUser) {
+        await createNotification(
+          patientUser.id,
+          'PLAN',
+          `A new PDF meal plan (“${plan.name}”) has been assigned to you.`
+        );
+        await sendEmail({
+          to: patientUser.email,
+          subject: 'New Meal Plan PDF',
+          html: `<p>Your nutritionist has uploaded a new meal plan PDF.</p>
+                 <p><strong>${plan.name}</strong></p>
+                 <a href="${pdfUrl}" target="_blank">View PDF</a>`,
+        });
+      }
+    } catch (err) {
+      console.error('PDF plan notification error:', err.message);
+    }
+  });
+
+  // 6. Return formatted response for frontend
+  return {
+    id: plan.id,
+    patientId: plan.patientId,
+    patientName: patient.user.fullName,
+    title: plan.name,
+    notes: plan.pdfNotes,
+    pdfUrl: plan.pdfUrl,
+    uploadedAt: plan.pdfAssignedAt,
+    assignedAt: plan.pdfAssignedAt,
+  };
+};
+
+// Optional: get all PDF plans for the nutritionist
+const getMyPdfPlans = async (nutritionistUserId) => {
+  const nutritionist = await plansRepo.getNutritionistByUserId(nutritionistUserId);
+  if (!nutritionist) throw new Error('Nutritionist profile not found');
+  const allPlans = await plansRepo.getNutritionistPlans(nutritionist.id);
+  return allPlans
+    .filter(plan => plan.pdfUrl !== null)
+    .map(plan => ({
+      id: plan.id,
+      patientId: plan.patientId,
+      patientName: plan.patient?.user?.fullName ?? 'Unknown',
+      title: plan.name,
+      notes: plan.pdfNotes,
+      pdfUrl: plan.pdfUrl,
+      uploadedAt: plan.pdfAssignedAt,
+      assignedAt: plan.pdfAssignedAt,
+    }));
+};
+
 module.exports = {
   getMyPlans,
   getPlanById,
@@ -171,4 +272,7 @@ module.exports = {
   updateMeal,
   deleteMeal,
   getPrebuiltPlans,
+  createPdfPlan,
+  getMyPdfPlans,
+  uploadPdfToCloudinary,
 };

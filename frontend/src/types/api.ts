@@ -172,6 +172,7 @@ export interface NutritionistAppointment {
   status: AppointmentStatus;
   patientName: string;
   notes?: string;
+  jitsiLink?: string;
 }
 
 export interface AvailableSlot {

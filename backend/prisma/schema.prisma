@@ -41,7 +41,7 @@ model Patient {
   age              Int?
   weight           Float?
   height           Float?
-  goalWeight       Float?
+  goalWeight      Float?
   dailyCalorieGoal Int?
 
   // Health profile
@@ -213,14 +213,18 @@ model Appointment {
 
 model NutritionPlan {
   id             Int          @id @default(autoincrement())
-  patientId      Int?                     // NULL for templates
-  nutritionistId Int?                     // NULL for templates
+  patientId      Int?
+  nutritionistId Int?
   startDate      DateTime?
   endDate        DateTime?
   status         PlanStatus   @default(DRAFT)
   isTemplate     Boolean      @default(false)   
   name           String?                    
   durationDays   Int?                       
+
+  pdfUrl         String?                     // cloud storage URL – if set, it's a PDF plan
+  pdfNotes       String?    @db.Text         // optional notes specific to PDF plan
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   meals          Meal[]
@@ -229,6 +233,7 @@ model NutritionPlan {
 
   @@map("nutrition_plans")
 }
+
 model Recipe {
   id           String   @id @default(cuid())
   name         String

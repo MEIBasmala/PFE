@@ -31,7 +31,7 @@ import {
 } from "@/components/ui";
 import { ProfileCard } from "@/components/ui/ProfileCard";
 
-// ─── Password strength helper (unchanged) ──────────────────
+// ─── Password strength helper  ──────────────────
 function getPasswordStrength(password: string): { score: number; label: string } {
   let score = 0;
   if (password.length >= 8) score++;
@@ -42,13 +42,18 @@ function getPasswordStrength(password: string): { score: number; label: string }
   return { score, label: labels[Math.min(score, 4)] };
 }
 
-// ─── Calorie goal calculation (unchanged) ──────────────────
-function calculateDailyCalorieGoal(profile: Partial<TProfile>): number {
-  const age = profile.age ?? 30;
-  const weight = profile.weight ?? 70;
-  const height = profile.height ?? 165;
-  const activityLevel = profile.activityLevel ?? "moderate";
+// ─── Calorie goal calculation  ──────────────────
+function calculateDailyCalorieGoal(profile: Partial<TProfile>): number | null {
+  const age = profile.age;
+  const weight = profile.weight;
+  const height = profile.height;
+  const activityLevel = profile.activityLevel;
   const goals = profile.goals ?? [];
+
+  // Cannot compute without all required fields
+  if (age == null || weight == null || height == null || !activityLevel) {
+    return null;
+  }
 
   let bmr = 10 * weight + 6.25 * height - 5 * age - 161;
   const activityFactors: Record<string, number> = {
@@ -124,10 +129,20 @@ export default function PatientProfile() {
     }
   }, [profile.data]);
 
-  const recomputedGoal = useMemo(
-    () => calculateDailyCalorieGoal(draft),
-    [draft.age, draft.weight, draft.height, draft.activityLevel, draft.goals]
-  );
+  // Get latest weight from progress history, fallback to profile weight
+  const latestWeight = useMemo(() => {
+    if (!progress.data?.length) return profile.data?.weight ?? null;
+    const sorted = [...progress.data].sort(
+      (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+    );
+    return sorted[0].weight;
+  }, [progress.data, profile.data?.weight]);
+
+  const recomputedGoal = useMemo(() => {
+    // Use latest weight for calorie calculation, not stale profile weight
+    const calcDraft = { ...draft, weight: latestWeight ?? draft.weight };
+    return calculateDailyCalorieGoal(calcDraft);
+  }, [draft.age, draft.weight, draft.height, draft.activityLevel, draft.goals, latestWeight]);
 
   const save = async () => {
     setSaving(true);
@@ -135,7 +150,7 @@ export default function PatientProfile() {
       const { fullName, email, phone, ...patientData } = draft;
       const payload = {
         ...patientData,
-        dailyCalorieGoal: recomputedGoal,
+        dailyCalorieGoal: recomputedGoal ?? draft.dailyCalorieGoal,
       };
       await updatePatientProfile(payload);
       toast.success("Profile updated & calorie goal recalculated");
@@ -148,7 +163,7 @@ export default function PatientProfile() {
   };
 
   const stats = [
-    { label: "Weight", value: profile.data?.weight ? `${profile.data.weight} kg` : "—" },
+    { label: "Weight", value: latestWeight != null ? `${latestWeight} kg` : "—" },
     { label: "Height", value: profile.data?.height ? `${profile.data.height} cm` : "—" },
     { label: "Goal", value: profile.data?.goalWeight ? `${profile.data.goalWeight} kg` : "—" },
     { label: "Logs", value: progress.data?.length ?? 0 },
@@ -293,7 +308,7 @@ export default function PatientProfile() {
                         <Label>Weight (kg)</Label>
                         <Input
                           type="number"
-                          value={draft.weight ?? ""}
+                          value={draft.weight ?? latestWeight ?? ""}
                           onChange={(e) => setDraft({ ...draft, weight: e.target.value ? Number(e.target.value) : undefined })}
                         />
                       </div>
@@ -328,11 +343,18 @@ export default function PatientProfile() {
                   <div className="space-y-2">
                     <Label>Recommended daily calorie goal</Label>
                     <div className="rounded-lg border border-border bg-primary/10 px-4 py-2 text-sm font-medium">
-                      {recomputedGoal} kcal
+                      {recomputedGoal != null ? `${recomputedGoal} kcal` : "—"}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Automatically updated based on your age, weight, height, activity level, and goals.
-                    </p>
+                    {recomputedGoal == null && (
+                      <p className="text-xs text-muted-foreground">
+                        Fill in age, weight, height, and activity level to see your recommended calorie goal.
+                      </p>
+                    )}
+                    {recomputedGoal != null && (
+                      <p className="text-xs text-muted-foreground">
+                        Automatically updated based on your age, weight, height, activity level, and goals.
+                      </p>
+                    )}
                   </div>
 
                   {/* ── Medical info ── */}
@@ -508,7 +530,7 @@ export default function PatientProfile() {
             </form>
           </TabsContent>
 
-          {/* Security Tab (unchanged) */}
+          {/* Security Tab  */}
           <TabsContent value="security">
             <SecurityPanel />
           </TabsContent>
@@ -518,7 +540,7 @@ export default function PatientProfile() {
   );
 }
 
-// Security panel (unchanged)
+// Security panel 
 function SecurityPanel() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");

@@ -74,6 +74,20 @@ const findById = async (id) => {
   return await prisma.user.findUnique({ where: { id } });
 };
 
+// Create Measurement for Patient
+const createMeasurement = async (patientId, data) => {
+  return await prisma.measurement.create({
+    data: {
+      patientId,
+      chest: data.chest ?? null,
+      waist: data.waist ?? null,
+      hips: data.hips ?? null,
+      arm: data.arm ?? null,
+      thigh: data.thigh ?? null,
+      bodyFat: data.bodyFat ?? null,
+    },
+  });
+};
 module.exports = {
   getPatientProfile,
   getNutritionistProfile,
@@ -81,4 +95,5 @@ module.exports = {
   updatePatientProfile,
   updateNutritionistProfile,
   findById,
+  createMeasurement,
 };

@@ -1,27 +1,33 @@
 const prisma = require('../../config/db');
 
-// Get appointments for a patient (with nutritionist and slot)
-const getPatientAppointments = async (patientId) => {
+const _getAppointmentsBy = async (where, include) => {
   return await prisma.appointment.findMany({
-    where: { patientId },
-    include: {
-      nutritionist: { include: { user: { select: { id: true, fullName: true, email: true } } } },
-      slot: true,
-    },
+    where,
+    include,
     orderBy: { createdAt: 'desc' },
   });
 };
 
+// Get appointments for a patient (with nutritionist and slot)
+const getPatientAppointments = async (patientId) => {
+  return _getAppointmentsBy(
+    { patientId },
+    {
+      nutritionist: { include: { user: { select: { id: true, fullName: true, email: true } } } },
+      slot: true,
+    }
+  );
+};
+
 // Get appointments for a nutritionist (with patient and slot)
 const getNutritionistAppointments = async (nutritionistId) => {
-  return await prisma.appointment.findMany({
-    where: { nutritionistId },
-    include: {
+  return _getAppointmentsBy(
+    { nutritionistId },
+    {
       patient: { include: { user: { select: { id: true, fullName: true, email: true } } } },
       slot: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+    }
+  );
 };
 
 // Get a single appointment by ID (includes patient, nutritionist, slot)

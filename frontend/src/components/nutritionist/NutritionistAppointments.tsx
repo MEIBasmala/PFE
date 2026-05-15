@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { nutritionistAppointmentsApi } from "@/services/api";
 import type { NutritionistAppointment } from "@/types/api";
-import { Calendar, Check, CheckCheck, X, Clock } from "lucide-react";
+import { Calendar, Check, CheckCheck, X, Clock,Video } from "lucide-react";
 
 import {
   Card,
@@ -176,6 +176,16 @@ export default function AppointmentsList() {
                     <Badge variant={getStatusVariant(a.status)} className="w-fit">
                       {a.status}
                     </Badge>
+
+                    {/* Join button for confirmed appointments */}
+{a.status === "CONFIRMED" && a.jitsiLink && (
+  <Button asChild size="sm" variant="default" className="gap-1">
+    <a href={a.jitsiLink} target="_blank" rel="noopener noreferrer">
+      <Video className="h-3.5 w-3.5" />
+      Join
+    </a>
+  </Button>
+)}
 
                     {/* Action Buttons */}
                     {isEditable && (

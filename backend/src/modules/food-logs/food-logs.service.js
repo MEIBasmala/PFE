@@ -1,10 +1,11 @@
 const foodLogsRepo = require('./food-logs.repository');
 const axios = require('axios');
+const prisma = require('../../config/db');
 
-const getMyFoodLogs = async (userId, date) => {  
+const getMyFoodLogs = async (userId, date) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
-  return await foodLogsRepo.getFoodLogs(patient.id, date); 
+  return await foodLogsRepo.getFoodLogs(patient.id, date);
 };
 
 const getFoodLogById = async (userId, logId) => {
@@ -29,17 +30,44 @@ const uploadMealImage = async (userId, imageUrl) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
 
+  // ─── AI QUOTA ENFORCEMENT (BACKEND SECURITY) ───────────────────────────────
+  // Enforces limits regardless of frontend (curl, postman, etc.)
+  const activeSub = await prisma.subscription.findFirst({
+    where: {
+      patientId: patient.id,
+      status: 'ACTIVE',
+      endDate: { gt: new Date() },
+    },
+    include: { package: true },
+  });
+
+  // No active subscription → deny (NO guessing, NO fallback logic)
+  if (!activeSub) {
+    throw new Error('No active subscription. Please subscribe to use AI scanning.');
+  }
+
+  const dailyLimit = activeSub.package.aiScansPerDay;
+  const usedToday = await foodLogsRepo.countTodayAiScans(patient.id);
+
+  if (usedToday >= dailyLimit) {
+    throw new Error(
+      `Daily AI scan limit reached (${usedToday}/${dailyLimit}). Upgrade your plan or try again tomorrow.`
+    );
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   let detectedFoods = null;
   let totalCalories = null;
   let confidenceScore = null;
   let aiEstimationData = null;
 
-  // استدعاء AI Service
+  // AI service call 
   try {
     const startTime = Date.now();
     const response = await axios.post(`${process.env.AI_SERVICE_URL}/predict`, {
       image_url: imageUrl,
     });
+
     const processingTime = (Date.now() - startTime) / 1000;
 
     detectedFoods = response.data.detected_foods;
@@ -56,7 +84,7 @@ const uploadMealImage = async (userId, imageUrl) => {
     console.log('AI Service unavailable:', aiError.message);
   }
 
-  // إنشاء Food Log
+  // Create Food Log (always created even if AI fails)
   const foodLog = await foodLogsRepo.createFoodLog({
     patientId: patient.id,
     imageUrl,
@@ -65,7 +93,7 @@ const uploadMealImage = async (userId, imageUrl) => {
     confidenceScore,
   });
 
-  // إنشاء AI Estimation إذا نجح الـ AI
+  // Create AI Estimation if AI succeeded
   if (aiEstimationData) {
     await foodLogsRepo.createAIEstimation({
       foodLogId: foodLog.id,
@@ -86,6 +114,7 @@ const deleteFoodLog = async (userId, logId) => {
 
   return await foodLogsRepo.deleteFoodLog(logId);
 };
+
 const createFoodLog = async (userId, data) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
@@ -99,7 +128,6 @@ const createFoodLog = async (userId, data) => {
     estimatedAt: data.estimatedAt ? new Date(data.estimatedAt) : new Date(),
   });
 
-  // Return with aiEstimation included (same shape as getMyFoodLogs)
   return await foodLogsRepo.getFoodLogById(foodLog.id);
 };
 

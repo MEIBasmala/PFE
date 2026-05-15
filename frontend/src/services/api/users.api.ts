@@ -1,3 +1,4 @@
+// services/api/users.api.ts
 import { api, apiFetch } from './client';
 import type { PatientProfile, Nutritionist, Measurement } from '@/types/api';
 
@@ -58,6 +59,16 @@ export const updatePatientProfile = async (patch: Partial<PatientProfile>): Prom
 export const changePassword = (currentPassword: string, newPassword: string) =>
   api.put<{ ok: true }>('/users/change-password', { currentPassword, newPassword });
 
+export const addMeasurement = (payload: {
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  arm?: number;
+  thigh?: number;
+  bodyFat?: number;
+}) => api.post<{ success: boolean; measurement: Measurement }>('/users/measurements', payload);
+
+
 export const getNutritionist = () => api.get<Nutritionist>('/users/profile');
 export const updateNutritionist = (patch: Partial<Nutritionist>) =>
   api.put<Nutritionist>('/users/profile', patch);
@@ -66,3 +77,4 @@ export const usersApi = {
   getProfile: () => api.get<any>('/users/profile'),
   updateProfile: (data: any) => api.put<any>('/users/profile', data),
 };
+

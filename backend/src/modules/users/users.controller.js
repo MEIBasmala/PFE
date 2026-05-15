@@ -52,9 +52,19 @@ const getUserById = async (req, res) => {
     res.status(status).json({ success: false, message: error.message });
   }
 };
+const addMeasurement = async (req, res) => {
+  try {
+    const measurement = await usersService.addMeasurement(req.user.id, req.body);
+    res.status(201).json({ success: true, measurement });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
   getUserById,
+  addMeasurement,
 };

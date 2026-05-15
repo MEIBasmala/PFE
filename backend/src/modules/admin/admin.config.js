@@ -5,21 +5,21 @@
  * All hardcoded values extracted for maintainability and environment flexibility.
  */
 
-// ── Currency & Pricing ──────────────────────────────────────
+//Currency & Pricing
 const CURRENCY = {
-  USD_RATE: 135, // DZD per USD cent (i.e., 1.35 DZD per USD)
+  USD_RATE: 135, // DZD per USD cent
   CODE: 'DZD',
   DECIMAL_PLACES: 0,
 };
 
-// ── Pagination ──────────────────────────────────────────────
+//Pagination
 const PAGINATION = {
   DEFAULT_LIMIT: 100,
   DEFAULT_ORDER_BY: { id: 'desc' },
   RECENT_PAYMENTS_LIMIT: 5,
 };
 
-// ── Analytics Periods ───────────────────────────────────────
+//Analytics Periods
 const ANALYTICS_PERIODS = {
   '7d': { days: 7, label: '7 days' },
   '30d': { days: 30, label: '30 days' },
@@ -29,7 +29,7 @@ const ANALYTICS_PERIODS = {
 
 const DEFAULT_ANALYTICS_PERIOD = '30d';
 
-// ── Validation Limits ───────────────────────────────────────
+//Validation Limits
 const VALIDATION = {
   FULL_NAME_MAX_LENGTH: 100,
   SPECIALIZATION_MAX_LENGTH: 100,
@@ -37,7 +37,7 @@ const VALIDATION = {
   EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 };
 
-// ── CSV Export ──────────────────────────────────────────────
+//CSV Export
 const CSV_EXPORT = {
   FILENAME: 'payments.csv',
   HEADERS: ['Date', 'User', 'Plan', 'Amount (DZD)', 'Status'],
@@ -48,7 +48,7 @@ const CSV_EXPORT = {
   },
 };
 
-// ── Audit Log Actions ───────────────────────────────────────
+//Audit Log Actions
 const AUDIT_ACTIONS = {
   ACTIVATE_PATIENT: 'ACTIVATE_PATIENT',
   DEACTIVATE_PATIENT: 'DEACTIVATE_PATIENT',
@@ -59,58 +59,58 @@ const AUDIT_ACTIONS = {
   DELETE_NUTRITIONIST: 'DELETE_NUTRITIONIST',
 };
 
-// ── Target Types ────────────────────────────────────────────
+// Target Types 
 const TARGET_TYPES = {
   PATIENT: 'Patient',
   NUTRITIONIST: 'Nutritionist',
 };
 
-// ── Roles ───────────────────────────────────────────────────
+//Roles
 const ROLES = {
   ADMIN: 'ADMIN',
   PATIENT: 'PATIENT',
   NUTRITIONIST: 'NUTRITIONIST',
 };
 
-// ── Blog Status ─────────────────────────────────────────────
+// Blog Status
 const BLOG_STATUS = {
   DRAFT: 'DRAFT',
   PUBLISHED: 'PUBLISHED',
 };
 
-// ── Subscription Status ─────────────────────────────────────
+//  Subscription Status
 const SUBSCRIPTION_STATUS = {
   ACTIVE: 'ACTIVE',
   EXPIRED: 'EXPIRED',
   CANCELLED: 'CANCELLED',
 };
 
-// ── Payment Status ──────────────────────────────────────────
+//  Payment Status
 const PAYMENT_STATUS = {
   SUCCESS: 'SUCCESS',
   FAILED: 'FAILED',
   PENDING: 'PENDING',
 };
 
-// ── User Status ─────────────────────────────────────────────
+// User Status 
 const USER_STATUS = {
   ACTIVE: true,
   INACTIVE: false,
 };
 
-// ── Nutritionist Defaults ───────────────────────────────────
+//Nutritionist Defaults 
 const NUTRITIONIST_DEFAULTS = {
   MUST_CHANGE_PASSWORD: true,
   ROLE: 'NUTRITIONIST',
 };
 
-// ── Password Generation ─────────────────────────────────────
+// Password Generation
 const PASSWORD = {
   TEMP_BYTES: 8,
   SALT_ROUNDS: 10,
 };
 
-// ── Export all ──────────────────────────────────────────────
+//  Export all 
 module.exports = {
   CURRENCY,
   PAGINATION,

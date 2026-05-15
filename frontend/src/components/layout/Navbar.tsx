@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, Home, ScanLineIcon, ChevronDown } from 'lucide-react';
+import NotificationDropdown from '@/components/ui/NotificationDropdown';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -32,7 +33,7 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Scroll spy
+  // Intersection observer for active section (only on homepage)
   useEffect(() => {
     if (location.pathname !== '/') return;
     const sections = [
@@ -57,7 +58,7 @@ const Navbar = () => {
     return () => observer.disconnect();
   }, [location.pathname]);
 
-  // Click outside to close mobile menu & avatar dropdown
+  // Close menus on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (mobileRef.current && !mobileRef.current.contains(e.target as Node)) {
@@ -71,7 +72,7 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Handle scroll-to after navigation
+  // Handle scroll state after navigation
   useEffect(() => {
     const state = location.state as { scrollTo?: string; scrollToTop?: boolean } | null;
     if (state?.scrollTo) {
@@ -151,134 +152,148 @@ const Navbar = () => {
         </span>
       </Link>
 
-      {/* Hamburger — visible below lg (1024px) */}
-      <button
-        className="lg:hidden bg-transparent border-none text-2xl cursor-pointer text-kl-green-dark p-1"
-        onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label="Toggle menu"
-      >
-        {mobileOpen ? '✕' : '☰'}
-      </button>
-
-      {/* Desktop Nav — hidden below lg, flex row above */}
+      {/* Desktop navigation links (hidden on mobile) */}
       <ul
         ref={mobileRef}
-        className={`flex items-center gap-6 xl:gap-8 list-none ${mobileOpen
+        className={`flex items-center gap-6 xl:gap-8 list-none ${
+          mobileOpen
             ? 'fixed top-[64px] sm:top-[72px] left-0 right-0 bg-white/[0.98] backdrop-blur-[20px] flex-col gap-0 p-4 border-b border-kl-gray-line z-[99] shadow-lg animate-slideIn'
             : 'hidden lg:flex'
-          }`}
+        }`}
       >
-        {/* Home */}
         <li className={mobileOpen ? 'w-full py-2.5 border-b border-kl-gray-line/50 last:border-0' : ''}>
           <a href="/" onClick={handleHomeClick} className={`block ${navLinkClass(isLinkActive('home'))}`}>
             Home
           </a>
         </li>
-
-        {/* Blog */}
         <li className={mobileOpen ? 'w-full py-2.5 border-b border-kl-gray-line/50 last:border-0' : ''}>
           <a href="#blog-section" onClick={e => handleScrollLink(e, 'blog-section')} className={`block ${navLinkClass(isLinkActive('blog'))}`}>
             Blog
           </a>
         </li>
-
-        {/* Pricing */}
         <li className={mobileOpen ? 'w-full py-2.5 border-b border-kl-gray-line/50 last:border-0' : ''}>
           <a href="#pricing" onClick={e => handleScrollLink(e, 'pricing')} className={`block ${navLinkClass(isLinkActive('pricing'))}`}>
             Pricing
           </a>
         </li>
-
-        {/* About */}
         <li className={mobileOpen ? 'w-full py-2.5 border-b border-kl-gray-line/50 last:border-0' : ''}>
           <Link to="/about" onClick={() => setMobileOpen(false)} className={`block ${navLinkClass(isLinkActive('about'))}`}>
             About
           </Link>
         </li>
-
-        {/* Contact */}
         <li className={mobileOpen ? 'w-full py-2.5 border-b border-kl-gray-line/50 last:border-0' : ''}>
           <Link to="/contact" onClick={() => setMobileOpen(false)} className={`block ${navLinkClass(isLinkActive('contact'))}`}>
             Contact
           </Link>
         </li>
 
-        {/* CTA / Avatar */}
-        <li className={mobileOpen ? 'w-full py-3' : ''}>
-          {user ? (
-            <div ref={avatarRef} className="relative">
-              {/* Desktop: avatar + mini dropdown */}
-              <button
-                onClick={() => setAvatarOpen(!avatarOpen)}
-                className="hidden lg:flex items-center gap-2 group focus:outline-none"
-              >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center text-[0.9rem] font-bold text-kl-text-dark shadow-[0_2px_8px_rgba(194,230,110,0.35)] transition-all group-hover:-translate-y-0.5">
-                  {userAvatar}
-                </div>
-                <div className="hidden xl:flex flex-col leading-tight text-left">
-                  <span className="text-[0.75rem] font-semibold text-kl-green-dark truncate max-w-[100px]">{user.fullName?.split(' ')[0]}</span>
-                  <span className="text-[0.65rem] text-kl-text-m capitalize">{user.role?.toLowerCase()}</span>
-                </div>
-                <ChevronDown size={14} className={`text-kl-text-m transition-transform ${avatarOpen ? 'rotate-180' : ''}`} />
-              </button>
+        {/* Mobile-only: Avatar row when logged in */}
+        {user && mobileOpen && (
+          <li className="w-full py-3">
+            <Link
+              to={dashboardPath}
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 no-underline"
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center text-base font-bold text-kl-text-dark">
+                {userAvatar}
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-semibold text-kl-green-dark">{user.fullName}</span>
+                <span className="text-xs text-kl-text-m capitalize">{user.role?.toLowerCase()} Dashboard ↗</span>
+              </div>
+            </Link>
+          </li>
+        )}
 
-              {/* Mobile: full row link to dashboard */}
-              <Link
-                to={dashboardPath}
-                onClick={() => setMobileOpen(false)}
-                className="lg:hidden flex items-center gap-3 no-underline"
-              >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center text-base font-bold text-kl-text-dark">
-                  {userAvatar}
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="text-sm font-semibold text-kl-green-dark">{user.fullName}</span>
-                  <span className="text-xs text-kl-text-m capitalize">{user.role?.toLowerCase()} Dashboard ↗</span>
-                </div>
-              </Link>
-
-              {/* Avatar Dropdown */}
-              {avatarOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-kl-gray-line shadow-lg py-1.5 z-[110] animate-slideIn">
-                  <Link
-                    to={dashboardPath}
-                    onClick={() => setAvatarOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-kl-text-m hover:bg-kl-green-light hover:text-kl-green-dark transition-colors"
-                  >
-                    <Home size={14} /> Profile
-                  </Link>
-                  { /* if role is patient show scan a meal link */ }
-
-                  {user.role?.toUpperCase() === 'PATIENT' && (
-                    <Link
-                      to={`patient/ai`} 
-                      onClick={() => setAvatarOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-kl-text-m hover:bg-kl-green-light hover:text-kl-green-dark transition-colors"
-                    >
-                      <ScanLineIcon size={14} /> Scan a meal
-                    </Link>
-                  )}
-                  <div className="mx-3 my-1 h-px bg-kl-gray-line" />
-                  <button
-                    onClick={() => { logout(); setAvatarOpen(false); }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors text-left"
-                  >
-                    <LogOut size={14} /> Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
+        {/* Mobile-only CTA (if not logged in) - appears inside the mobile menu */}
+        {!user && mobileOpen && (
+          <li className="w-full py-3">
             <Link
               to="/auth"
               onClick={() => setMobileOpen(false)}
-              className="inline-flex items-center justify-center bg-gradient-to-br from-kl-green to-kl-orange text-kl-text-dark px-5 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-[0.85rem] sm:text-[0.9rem] no-underline transition-all shadow-[0_2px_8px_rgba(194,230,110,0.3)] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(194,230,110,0.4)] whitespace-nowrap"
+              className="inline-flex items-center justify-center bg-gradient-to-br from-kl-green to-kl-orange text-kl-text-dark px-5 py-2 rounded-full font-bold text-[0.85rem] no-underline transition-all shadow-[0_2px_8px_rgba(194,230,110,0.3)] w-full"
             >
               Get Started →
             </Link>
-          )}
-        </li>
+          </li>
+        )}
       </ul>
+
+      {/* Right side: notification bell, hamburger (mobile), avatar dropdown (desktop), and desktop Get Started button */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Notification bell – only when user is logged in */}
+        {user && <NotificationDropdown />}
+
+        {/* Hamburger button (mobile only) */}
+        <button
+          className="lg:hidden bg-transparent border-none text-2xl cursor-pointer text-kl-green-dark p-1"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? '✕' : '☰'}
+        </button>
+
+        {/* Desktop avatar dropdown (only visible on lg+) */}
+        {user && (
+          <div ref={avatarRef} className="hidden lg:block relative">
+            <button
+              onClick={() => setAvatarOpen(!avatarOpen)}
+              className="flex items-center gap-2 group focus:outline-none"
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center text-[0.9rem] font-bold text-kl-text-dark shadow-[0_2px_8px_rgba(194,230,110,0.35)] transition-all group-hover:-translate-y-0.5">
+                {userAvatar}
+              </div>
+              <div className="hidden xl:flex flex-col leading-tight text-left">
+                <span className="text-[0.75rem] font-semibold text-kl-green-dark truncate max-w-[100px]">
+                  {user.fullName?.split(' ')[0]}
+                </span>
+                <span className="text-[0.65rem] text-kl-text-m capitalize">{user.role?.toLowerCase()}</span>
+              </div>
+              <ChevronDown size={14} className={`text-kl-text-m transition-transform ${avatarOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {avatarOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-kl-gray-line shadow-lg py-1.5 z-[110] animate-slideIn">
+                <Link
+                  to={dashboardPath}
+                  onClick={() => setAvatarOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-kl-text-m hover:bg-kl-green-light hover:text-kl-green-dark transition-colors"
+                >
+                  <Home size={14} /> Profile
+                </Link>
+                {user.role?.toUpperCase() === 'PATIENT' && (
+                  <Link
+                    to="/patient/ai"
+                    onClick={() => setAvatarOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-kl-text-m hover:bg-kl-green-light hover:text-kl-green-dark transition-colors"
+                  >
+                    <ScanLineIcon size={14} /> Scan a meal
+                  </Link>
+                )}
+                <div className="mx-3 my-1 h-px bg-kl-gray-line" />
+                <button
+                  onClick={() => { logout(); setAvatarOpen(false); }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors text-left"
+                >
+                  <LogOut size={14} /> Logout
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Get Started button – visible ONLY on desktop (lg+) when NOT logged in */}
+        {!user && (
+          <Link
+            to="/auth"
+            onClick={() => setMobileOpen(false)}
+            className="hidden lg:inline-flex items-center justify-center bg-gradient-to-br from-kl-green to-kl-orange text-kl-text-dark px-5 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-[0.85rem] sm:text-[0.9rem] no-underline transition-all shadow-[0_2px_8px_rgba(194,230,110,0.3)] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(194,230,110,0.4)] whitespace-nowrap"
+          >
+            Get Started →
+          </Link>
+        )}
+      </div>
     </nav>
   );
 };

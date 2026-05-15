@@ -185,10 +185,27 @@ const getUserById = async (targetUserId, requestingUserId, requestingRole) => {
   throw new Error('Access denied: insufficient permissions');
 };
 
+const addMeasurement = async (userId, data) => {
+  const patient = await prisma.patient.findUnique({ where: { userId } });
+  if (!patient) throw new Error('Patient profile not found');
+
+  return await prisma.measurement.create({
+    data: {
+      patientId: patient.id,
+      chest: data.chest ?? null,
+      waist: data.waist ?? null,
+      hips: data.hips ?? null,
+      arm: data.arm ?? null,
+      thigh: data.thigh ?? null,
+      bodyFat: data.bodyFat ?? null,
+    },
+  });
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
   getUserById,
-
+  addMeasurement,
 };

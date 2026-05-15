@@ -86,7 +86,40 @@ const getPrebuiltPlans = async (req, res) => {
   }
 };
 
+const uploadPdfPlan = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No PDF file uploaded' });
+    }
+    const { patientId, title, notes } = req.body;
+    if (!patientId) {
+      return res.status(400).json({ success: false, message: 'Patient ID is required' });
+    }
+
+    const plan = await plansService.createPdfPlan(
+      req.user.id,
+      req.file,
+      parseInt(patientId),
+      title,
+      notes
+    );
+    res.status(201).json({ success: true, plan });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const getMyPdfPlans = async (req, res) => {
+  try {
+    const plans = await plansService.getMyPdfPlans(req.user.id);
+    res.json({ success: true, plans });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getMyPlans, getPlanById, createPlan, updatePlan,
   deletePlan, addMeal, updateMeal, deleteMeal, getPrebuiltPlans,
+  uploadPdfPlan, getMyPdfPlans
 };

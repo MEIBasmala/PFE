@@ -431,7 +431,7 @@ export default function PatientAITracker() {
   );
 }
 
-// Helper components (unchanged)
+// Helper components 
 function StatItem({ icon, value, label }: { icon: string; value: number | string; label: string }) {
   return (
     <div>

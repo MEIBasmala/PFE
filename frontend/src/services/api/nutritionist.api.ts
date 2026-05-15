@@ -22,6 +22,7 @@ const transformAppointment = (raw: any): NutritionistAppointment => {
     status: raw.status,
     patientName: raw.patient?.user?.fullName || 'Unknown Patient',
     notes: raw.notes || undefined,
+    jitsiLink: raw.jitsiLink || undefined, 
   };
 };
 // ============================================================

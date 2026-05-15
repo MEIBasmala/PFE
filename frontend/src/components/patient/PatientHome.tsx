@@ -39,6 +39,7 @@ import {
   addProgress,
   getMyFoodLogs,
   getPatientProfile,
+  addMeasurement,
 } from "@/services/api";
 
 import ProgressPhotos from './ProgressPhotos';
@@ -84,7 +85,7 @@ const MEAL_COLORS: Record<string, string> = {
   breakfast: "hsl(var(--saffron))",
   lunch: "hsl(var(--orange))",
   dinner: "hsl(var(--green-dark))",
-  snack: "hsl(var(--green))",   
+  snack: "hsl(var(--green))",
 };
 
 export default function PatientHome() {
@@ -123,9 +124,16 @@ export default function PatientHome() {
     100,
     Math.round((aiScansUsedToday / Math.max(1, aiScansPerDay)) * 100),
   );
-  const currentWeight = progress.data?.[0]?.weight ?? profile.data?.weight;
+  const sortedProgress = useMemo(() => {
+    if (!progress.data?.length) return [];
+    return [...progress.data].sort(
+      (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+    );
+  }, [progress.data]);
+
+  const currentWeight = sortedProgress[0]?.weight ?? profile.data?.weight;
+  const startWeight = sortedProgress[sortedProgress.length - 1]?.weight;
   const goalWeight = profile.data?.goalWeight;
-  const startWeight = progress.data?.[progress.data.length - 1]?.weight;
   const weightDelta =
     typeof currentWeight === "number" && typeof startWeight === "number"
       ? +(currentWeight - startWeight).toFixed(1)
@@ -796,7 +804,8 @@ function MeasurementsModal({
 
   useEffect(() => {
     setM(initial);
-  }, [initial]);
+    setWeight(currentWeight?.toString() ?? "");
+  }, [initial, currentWeight]);
 
   const update = (key: keyof Measurement, val: string) => {
     const num = val === "" ? undefined : Number(val);
@@ -813,8 +822,16 @@ function MeasurementsModal({
     }
     setSaving(true);
     try {
-      await addProgress({ weight: Number(weight), measurements: m });
-      toast.success("Measurements saved");
+      await addProgress({ weight: Number(weight) });
+      await addMeasurement({
+        chest: m.chest,
+        waist: m.waist,
+        hips: m.hips,
+        arm: m.arm,
+        thigh: m.thigh,
+        bodyFat: m.bodyFat,
+      });
+      toast.success("Saved successfully");
       await onSaved();
       onOpenChange(false);
     } catch (err) {

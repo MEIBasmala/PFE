@@ -21,7 +21,7 @@ const getPatientAppointments = async (req, res) => {
          userId: app.nutritionist.user.id,
       },
     }));
-    res.status(200).json(transformed);  // plain array, no wrapper
+    res.status(200).json(transformed);  
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

@@ -11,8 +11,15 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-
+ 
 const { createServer } = require('./config/socket');
+
+// Rate limiters
+const {
+  authLimiter,
+  chatbotLimiter,
+  generalLimiter,
+} = require('./config/rateLimiter');
 
 const app = express();
 app.use(cookieParser());
@@ -27,8 +34,20 @@ app.use(cors({
   credentials: true,
 }));
 
-// Stripe webhook needs raw body must be before express.json()
+// Rate limiters
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/refresh', authLimiter);
+
+app.use('/api/chatbot/message', chatbotLimiter);
+
+// General API limiter
+app.use('/api', generalLimiter);
+
+// Stripe webhook needs raw body before express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -64,7 +83,7 @@ app.use((req, res) => {
 
 //  Global Error Handler 
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(err.stack || err);
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
 

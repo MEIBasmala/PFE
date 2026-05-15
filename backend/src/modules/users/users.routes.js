@@ -8,7 +8,9 @@ const prisma = require('../../config/db');
 router.get('/profile',         protect, usersController.getProfile);
 router.put('/profile',         protect, validateUpdateProfile, usersController.updateProfile);
 router.put('/change-password', protect, validateChangePassword, usersController.changePassword);
-router.get('/:id', protect, usersController.getUserById);
+router.get('/:id',             protect, usersController.getUserById);
+router.post('/measurements',   protect,authorize('PATIENT'),   usersController.addMeasurement);
+
 
 
 // Accessible to any authenticated user — safe because password is excluded via select
