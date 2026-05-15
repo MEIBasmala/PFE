@@ -52,9 +52,7 @@ export default function PatientConsultations() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("upcoming");
   const appts = useAsync(() => getMyAppointments(), [], { toastOnError: false });
-  const { plan, packageInfo, consultationsPerMonth, refreshSubscription } = useSubscription();
-
-  // FIX: Also fetch nutritionists to get userId mapping for appointments
+const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscription } = useSubscription();  // FIX: Also fetch nutritionists to get userId mapping for appointments
   const nutritionists = useAsync(() => getNutritionists(), [], { toastOnError: false });
 
   // Build a map of nutritionist table ID -> userId for quick lookup
@@ -76,15 +74,21 @@ export default function PatientConsultations() {
   );
 
   const usedThisMonth = useMemo(() => {
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    return appointments.filter(
-      (a) =>
-        a.status !== "CANCELLED" &&
-        new Date(a.scheduledAt).getTime() >= monthStart.getTime(),
-    ).length;
-  }, [appointments]);
+  // If no active subscription, no credits available
+  if (!subscription?.startDate) return 0;
+  
+  const subscriptionStart = new Date(subscription.startDate);
+  
+  return appointments.filter((a) => {
+    if (a.status === "CANCELLED") return false;
+    // Only count appointments that belong to current subscription
+    // Either by subscriptionId (if backend sends it) or by scheduled date after subscription start
+    const belongsToCurrentSub = a.subscriptionId 
+      ? a.subscriptionId === subscription.id
+      : new Date(a.scheduledAt).getTime() >= subscriptionStart.getTime();
+    return belongsToCurrentSub;
+  }).length;
+}, [appointments, subscription]);
 
   const remainingCredits = Math.max(0, consultationsPerMonth - usedThisMonth);
   const unlimited = consultationsPerMonth >= 999;

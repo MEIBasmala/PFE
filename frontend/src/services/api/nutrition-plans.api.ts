@@ -1,42 +1,18 @@
 // src/services/api/nutrition-plans.api.ts
 import { api } from './client';
-import type { NutritionPlan, Meal, FoodItem } from '@/types/api';
-
-// UI-friendly meal type (with name, calories, macros)
-export interface UIMeal {
-  id: number;
-  name: string;
-  calories: number;
-  macros: { protein: number; carbs: number; fat: number };
-  mealType: string;
-  dayNumber: number;
-}
-
-// UI-friendly day structure
-export interface UIDay {
-  day: number;
-  meals: UIMeal[];
-}
-
-// UI-friendly plan (with days, title, dailyCalorieTarget)
-export interface UIPlan {
-  id: number;
-  title: string;
-  days: UIDay[];
-  dailyCalorieTarget: number;
-  status: string;
-  startDate: string;
-  endDate: string;
-}
+import type { NutritionPlan, Meal, FoodItem , UIPlan, UIMeal} from '@/types/api';
 
 // Transform a backend Meal (with foodItems) to UIMeal
 const transformMeal = (meal: Meal): UIMeal => {
-  const totalCalories = meal.foodItems?.reduce((sum, item) => sum + (item.calories || 0), 0) || 0;
-  const totalProtein = meal.foodItems?.reduce((sum, item) => sum + (item.protein || 0), 0) || 0;
-  const totalCarbs = meal.foodItems?.reduce((sum, item) => sum + (item.carbs || 0), 0) || 0;
-  const totalFat = meal.foodItems?.reduce((sum, item) => sum + (item.fat || 0), 0) || 0;
-  // Meal name: use food items' names joined, or fallback
-  const mealName = meal.foodItems?.map(f => f.name).join(', ') || `${meal.mealType.toLowerCase()} meal`;
+  const items = meal.foodItems ?? [];  // ← GUARD
+  
+  const totalCalories = items.reduce((sum, item) => sum + (item.calories || 0), 0);
+  const totalProtein = items.reduce((sum, item) => sum + (item.protein || 0), 0);
+  const totalCarbs = items.reduce((sum, item) => sum + (item.carbs || 0), 0);
+  const totalFat = items.reduce((sum, item) => sum + (item.fat || 0), 0);
+  
+  const mealName = items.map(f => f.name).join(', ') || `${meal.mealType.toLowerCase()} meal`;
+  
   return {
     id: meal.id,
     name: mealName,
@@ -50,13 +26,22 @@ const transformMeal = (meal: Meal): UIMeal => {
 // Transform a backend NutritionPlan to UIPlan
 const transformPlan = (plan: NutritionPlan): UIPlan => {
   const daysMap = new Map<number, UIMeal[]>();
-  plan.meals.forEach(meal => {
+  
+  // GUARD: handle undefined or empty meals array
+  const meals = plan.meals ?? [];
+  
+  meals.forEach(meal => {
     const uiMeal = transformMeal(meal);
     if (!daysMap.has(uiMeal.dayNumber)) daysMap.set(uiMeal.dayNumber, []);
     daysMap.get(uiMeal.dayNumber)!.push(uiMeal);
   });
-  const days = Array.from(daysMap.entries()).sort((a,b)=>a[0]-b[0]).map(([day, meals]) => ({ day, meals }));
+  
+  const days = Array.from(daysMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([day, meals]) => ({ day, meals }));
+  
   const dailyCalorieTarget = days[0]?.meals.reduce((sum, m) => sum + m.calories, 0) || 0;
+  
   return {
     id: plan.id,
     title: plan.name || `Plan from ${plan.startDate ? new Date(plan.startDate).toLocaleDateString() : 'Template'}`,

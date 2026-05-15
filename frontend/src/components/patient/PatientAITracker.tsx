@@ -159,21 +159,26 @@ export default function PatientAITracker() {
   };
 
   const analyze = async () => {
-    if (!selectedFile) return;
-    if (remaining <= 0) {
-      toast.error("Daily AI scan limit reached. Upgrade your plan to unlock more.");
-      return;
-    }
-    setAnalyzing(true);
+  if (!selectedFile) return;
+  if (remaining <= 0) {
+    toast.error("Daily AI scan limit reached. Upgrade your plan to unlock more.");
+    return;
+  }
+  setAnalyzing(true);
+  try {
     const created = await uploadImage(selectedFile);
-    setAnalyzing(false);
     if (created) {
       resetModal();
       setScanModalOpen(false);
       await refreshSubscription();
       toast.success("Meal analysed and added to your diary!");
     }
-  };
+  } catch (err) {
+    toast.error((err as Error).message || "Failed to analyse meal. Please try again.");
+  } finally {
+    setAnalyzing(false);
+  }
+};
 
   const dateObj = new Date(date);
   const shiftDate = (delta: number) => {

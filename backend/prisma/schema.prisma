@@ -164,6 +164,7 @@ model Subscription {
   stripeSubscriptionId String?
   createdAt            DateTime           @default(now())
   payments             Payment[]
+  appointments         Appointment[]
   package              Package            @relation(fields: [packageId], references: [id])
   patient              Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
@@ -204,13 +205,15 @@ model Appointment {
   jitsiLink      String?
   notes          String?
   createdAt      DateTime          @default(now())
+  subscriptionId Int?             
+  
   nutritionist   Nutritionist      @relation(fields: [nutritionistId], references: [id])
   patient        Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   slot           AvailableSlot     @relation(fields: [slotId], references: [id])
+  subscription   Subscription?     @relation(fields: [subscriptionId], references: [id])  
 
   @@map("appointments")
 }
-
 model NutritionPlan {
   id             Int          @id @default(autoincrement())
   patientId      Int?

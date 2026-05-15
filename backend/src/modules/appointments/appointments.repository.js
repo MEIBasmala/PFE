@@ -15,6 +15,7 @@ const getPatientAppointments = async (patientId) => {
     {
       nutritionist: { include: { user: { select: { id: true, fullName: true, email: true } } } },
       slot: true,
+      subscription: true, 
     }
   );
 };
@@ -49,6 +50,7 @@ const createAppointment = async (data) => {
     include: {
       nutritionist: { include: { user: { select: { id: true, fullName: true, email: true } } } },
       slot: true,
+      subscription: { include: { package: true } }, 
     },
   });
 };

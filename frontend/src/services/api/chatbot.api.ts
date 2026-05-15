@@ -1,19 +1,10 @@
 // src/services/api/chatbot.api.ts
 import { getToken , apiFetch} from './client';
+import type { ChatMessage, ChatStreamCallbacks } from '@/types/api';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export interface ChatMessage {
-  role: 'USER' | 'ASSISTANT';
-  content: string;
-}
 
-export interface ChatStreamCallbacks {
-  onToken: (text: string, provider: string) => void;
-  onDone: (fullResponse: string, provider: string, intent: string, duration: number) => void;
-  onTyping: () => void;
-  onError: (message: string) => void;
-}
 
 /**
  * Sends a message to the chatbot and streams the response via SSE.

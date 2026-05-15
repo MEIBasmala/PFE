@@ -45,38 +45,11 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-import { getBlogArticles } from '@/services/api/blog.api';
-import { getPackages } from '@/services/api/subscriptions.api';
+import { getBlogArticles,getPackages } from '@/services/api';
+import { BlogPost, ContactPayload} from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import '../styles/homepage.css';
 
-/* ─── Image URLs ─── */
-export const IMAGE_URLS = {
-  pricing: '../src/assets/creamBg.jpg',
-  missionBg: '../src/assets/healthyFood.jpg',
-  testimonialBg: '../src/assets/testimonialBg.jpg',
-  howItWorksBg: '../src/assets/howItWorksBg.jpg',
-} as const;
-
-/* ─── Types ─── */
-export interface BlogPost {
-  id: number;
-  title: string;
-  category: string;
-  excerpt: string;
-  author: string;
-  date: string;
-  readTime: string;
-  likes: number;
-  comments: number;
-  imageUrl?: string;
-}
-
-export interface ContactPayload {
-  name: string;
-  email: string;
-  message: string;
-}
 
 export interface PricingPlan {
   name: string;
@@ -87,6 +60,17 @@ export interface PricingPlan {
   featured: boolean;
   badge: string | null;
 }
+
+
+/* ─── Image URLs ─── */
+export const IMAGE_URLS = {
+  pricing: '../src/assets/creamBg.jpg',
+  missionBg: '../src/assets/healthyFood.jpg',
+  testimonialBg: '../src/assets/testimonialBg.jpg',
+  howItWorksBg: '../src/assets/howItWorksBg.jpg',
+} as const;
+
+/* ─── Types ─── */
 
 interface HomepageProps {
   onContactSubmit?: (payload: ContactPayload) => Promise<void>;

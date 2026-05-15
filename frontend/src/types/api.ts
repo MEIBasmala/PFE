@@ -110,6 +110,17 @@ export interface ChatbotStats {
   providers: { geminiPercentage: number; ollamaPercentage: number; cachePercentage: number };
   intents: { intent: string; count: number; percentage: number }[];
 }
+export interface ChatMessage {
+  role: 'USER' | 'ASSISTANT';
+  content: string;
+}
+
+export interface ChatStreamCallbacks {
+  onToken: (text: string, provider: string) => void;
+  onDone: (fullResponse: string, provider: string, intent: string, duration: number) => void;
+  onTyping: () => void;
+  onError: (message: string) => void;
+}
 
 /**
  * Flattened profile used by frontend components.
@@ -156,7 +167,8 @@ export interface Appointment {
   jitsiLink?: string;
   notes?: string;
   createdAt: ISODateString;
-  scheduledAt: ISODateString; 
+  scheduledAt: ISODateString;
+   subscriptionId?: number; 
   durationMinutes: number;
   nutritionist: {
     id: number;
@@ -263,7 +275,6 @@ export interface NutritionPlanMeal {
   notes?: string;
 }
 
-/** Full database-backed nutrition plan (from Prisma) */
 // api.ts - inside Nutrition Plans section
 
 export interface NutritionPlan {
@@ -276,7 +287,7 @@ export interface NutritionPlan {
   isTemplate: boolean;              // NEW
   name?: string | null;             // template name
   durationDays?: number | null;     // e.g. 7 for weekly plans
-  meals: Meal[];
+  meals?: Meal[];
   createdAt?: ISODateString;
   updatedAt?: ISODateString;
 }
@@ -290,6 +301,33 @@ export interface NutritionPlanDraft {
   endDate?: string;
   notes?: string;
   meals: NutritionPlanMeal[];
+}
+
+// UI-friendly meal type (with name, calories, macros)
+export interface UIMeal {
+  id: number;
+  name: string;
+  calories: number;
+  macros: { protein: number; carbs: number; fat: number };
+  mealType: string;
+  dayNumber: number;
+}
+
+// UI-friendly day structure
+export interface UIDay {
+  day: number;
+  meals: UIMeal[];
+}
+
+// UI-friendly plan (with days, title, dailyCalorieTarget)
+export interface UIPlan {
+  id: number;
+  title: string;
+  days: UIDay[];
+  dailyCalorieTarget: number;
+  status: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface Progress {
@@ -486,3 +524,26 @@ export interface Notification {
   isRead: boolean;
   createdAt: ISODateString;
 }
+
+//===========================================================
+// homepage
+// ============================================================
+export interface BlogPost {
+  id: number;
+  title: string;
+  category: string;
+  excerpt: string;
+  author: string;
+  date: string;
+  readTime: string;
+  likes: number;
+  comments: number;
+  imageUrl?: string;
+}
+
+export interface ContactPayload {
+  name: string;
+  email: string;
+  message: string;
+}
+

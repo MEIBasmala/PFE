@@ -24,10 +24,10 @@ import {
   LayoutGrid
 } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
-import { getMyPlans, getPrebuiltPlans, type UIPlan, type UIMeal } from "@/services/api";
+import { getMyPlans, getPrebuiltPlans} from "@/services/api";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useDiary } from "@/contexts/DiaryContext";
-import type { MealCategory } from "@/types/api";
+import type { MealCategory, UIPlan,UIMeal } from "@/types/api";
 import { toast } from "sonner";
 
 import {

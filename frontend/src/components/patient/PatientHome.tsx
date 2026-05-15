@@ -44,7 +44,7 @@ import {
 
 import ProgressPhotos from './ProgressPhotos';
 
-import { addDays, formatShortDate, startOfWeek, toIsoDate } from "@/lib/date";
+import { addDays, formatShortDate, toIsoDate } from "@/lib/date";
 import { apiCache, cachedFetch } from "@/lib/apiCache";
 import type {
   Appointment,
@@ -91,7 +91,13 @@ const MEAL_COLORS: Record<string, string> = {
 export default function PatientHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { totals, logs, loading: diaryLoading } = useDiary();
+  const {
+    totals,
+    logs,
+    loading: diaryLoading,
+    weekData,
+    weekLoading,
+  } = useDiary();
   const {
     aiScansPerDay,
     aiScansUsedToday,
@@ -114,9 +120,6 @@ export default function PatientHome() {
     cacheKey: "patient:appointments",
     cacheTtl: TTL.appointments,
   });
-
-  const weekStart = useMemo(() => startOfWeek(), []);
-  const { weekData, weekLoading } = useDiary();
 
   const goal = profile.data?.dailyCalorieGoal ?? DEFAULT_GOAL;
   const caloriesPct = Math.min(100, Math.round((totals.calories / goal) * 100));

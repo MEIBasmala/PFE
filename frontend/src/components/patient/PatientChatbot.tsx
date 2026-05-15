@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Bot, Send, StopCircle, Trash2, X, Zap } from 'lucide-react';
-import { chatbotApi, type ChatMessage } from '@/services/api/chatbot.api';
+import { chatbotApi } from '@/services/api/chatbot.api';
+import type { ChatMessage, ChatStreamCallbacks } from '@/types/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui";

@@ -15,6 +15,7 @@ const getPatientAppointments = async (req, res) => {
       status: app.status,
       jitsiLink: app.jitsiLink || null,
       notes: app.notes || null,
+      subscriptionId: app.subscriptionId,
       nutritionist: {
         id: app.nutritionist.id,
         fullName: app.nutritionist.user.fullName,

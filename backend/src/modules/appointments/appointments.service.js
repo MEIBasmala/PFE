@@ -3,22 +3,24 @@ const sendEmail = require('../../config/email');
 const { createNotification } = require('../notifications/notifications.service');
 const prisma = require('../../config/db');
 const usersRepo = require('../users/users.repository');
+const subsRepo =  require('../subscriptions/subscriptions.repository');
 
-// ----- Helper to get patient appointments -----
+
+// Helper to get patient appointments
 const getPatientAppointments = async (userId) => {
   const patient = await appointmentsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
   return await appointmentsRepo.getPatientAppointments(patient.id);
 };
 
-// ----- Helper to get nutritionist appointments -----
+// Helper to get nutritionist appointments
 const getNutritionistAppointments = async (userId) => {
   const nutritionist = await appointmentsRepo.getNutritionistByUserId(userId);
   if (!nutritionist) throw new Error('Nutritionist profile not found');
   return await appointmentsRepo.getNutritionistAppointments(nutritionist.id);
 };
 
-// ----- Book an appointment (with transaction and row lock) -----
+// Book an appointment (with subscription credit check)
 const bookAppointment = async (userId, { slotId, nutritionistId }) => {
   const patient = await appointmentsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
@@ -28,7 +30,29 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
   const nutritionistIdInt = parseInt(nutritionistId, 10);
   if (isNaN(nutritionistIdInt)) throw new Error('Invalid nutritionist ID');
 
-  // Use a transaction with SELECT FOR UPDATE (Prisma adds row lock automatically)
+  // ── SUBSCRIPTION CHECK ───────────────────────────────────────────
+  const activeSub = await subsRepo.getActiveSubscription(patient.id);
+  if (!activeSub) throw new Error('No active subscription found. Please subscribe to a plan first.');
+
+  const pkg = activeSub.package;
+  const consultationsAllowed = pkg.consultationsPerMonth;
+
+  // Unlimited consultations (999+ means unlimited)
+  if (consultationsAllowed < 999) {
+    const usedConsultations = await prisma.appointment.count({
+      where: {
+        patientId: patient.id,
+        subscriptionId: activeSub.id,
+        status: { not: 'CANCELLED' },
+      },
+    });
+
+    if (usedConsultations >= consultationsAllowed) {
+      throw new Error(`You have used all ${consultationsAllowed} consultations for your current ${pkg.name} plan. Upgrade to book more.`);
+    }
+  }
+  // ── END SUBSCRIPTION CHECK ─────────────────────────────────────
+
   return await prisma.$transaction(async (tx) => {
     // 1. Lock and fetch the slot row
     const slot = await tx.availableSlot.findUnique({
@@ -49,7 +73,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
       throw new Error('Cannot book a slot in the past');
     }
 
-    // 4. Create the appointment
+    // 4. Create the appointment WITH subscriptionId
     const jitsiLink = `https://meet.jit.si/KhabirLens-${Date.now()}`;
     const appointment = await tx.appointment.create({
       data: {
@@ -58,6 +82,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
         slotId: slotIdInt,
         status: 'PENDING',
         jitsiLink,
+        subscriptionId: activeSub.id, // ← ADDED
       },
       include: {
         nutritionist: { include: { user: true } },
@@ -71,7 +96,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
       data: { isBooked: true },
     });
 
-    // 6. After transaction commit, send notifications & email (fire-and-forget, non-blocking)
+    // 6. After transaction commit, send notifications & email
     setImmediate(async () => {
       try {
         const nutritionistUserId = appointment.nutritionist.user.id;
@@ -105,7 +130,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
   });
 };
 
-// ----- Confirm an appointment (nutritionist) -----
+// Confirm an appointment (nutritionist)
 const confirmAppointment = async (userId, appointmentId) => {
   const nutritionist = await appointmentsRepo.getNutritionistByUserId(userId);
   if (!nutritionist) throw new Error('Nutritionist profile not found');
@@ -135,7 +160,7 @@ const confirmAppointment = async (userId, appointmentId) => {
   return updated;
 };
 
-// ----- Cancel an appointment (patient or nutritionist) -----
+// Cancel an appointment (patient or nutritionist)
 const cancelAppointment = async (userId, appointmentId, role) => {
   const appointment = await appointmentsRepo.getAppointmentById(appointmentId);
   if (!appointment) throw new Error('Appointment not found');
@@ -179,7 +204,7 @@ const cancelAppointment = async (userId, appointmentId, role) => {
   return cancelled;
 };
 
-// ----- Complete an appointment (nutritionist) -----
+// Complete an appointment (nutritionist)
 const completeAppointment = async (userId, appointmentId, notes) => {
   const nutritionist = await appointmentsRepo.getNutritionistByUserId(userId);
   if (!nutritionist) throw new Error('Nutritionist profile not found');
