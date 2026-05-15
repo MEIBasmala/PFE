@@ -9,4 +9,22 @@ const getRecipeById = async (id) => {
   return await recipesRepo.getRecipeById(id);
 };
 
-module.exports = { getAllRecipes, getRecipeById };
+const createRecipe = async (data) => {
+  return await recipesRepo.createRecipe(data);
+};
+
+const updateRecipe = async (id, data) => {
+  return await recipesRepo.updateRecipe(id, data);
+};
+
+const deleteRecipe = async (id) => {
+  return await recipesRepo.deleteRecipe(id);
+};
+
+module.exports = { 
+  getAllRecipes, 
+  getRecipeById, 
+  createRecipe,
+  updateRecipe,
+  deleteRecipe
+};

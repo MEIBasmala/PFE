@@ -9,7 +9,7 @@ export const getBlogArticles = async (params?: { category?: string; q?: string }
   const tail = qs.toString();
   const response = await api.get<{ success: boolean; articles: BlogArticle[] }>(
     `/blog${tail ? `?${tail}` : ''}`,
-    { skipAuth: true }   // ← add this
+    { skipAuth: true }   
   );
   return response.articles;
 };
@@ -17,7 +17,7 @@ export const getBlogArticles = async (params?: { category?: string; q?: string }
 export const getBlogArticle = async (id: string) => {
   const response = await api.get<{ success: boolean; article: BlogArticle }>(
     `/blog/${id}`,
-    { skipAuth: true }   // ← add this
+    { skipAuth: true }   
   );
   return response.article;
 };

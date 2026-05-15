@@ -750,7 +750,7 @@ function StatTile({
   return (
     <Card
       className={cn(
-        "h-full min-h-[130px]",   // ← add these
+        "h-full min-h-[130px]", 
         onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
       )}
       onClick={onClick}

@@ -82,7 +82,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
         slotId: slotIdInt,
         status: 'PENDING',
         jitsiLink,
-        subscriptionId: activeSub.id, // ← ADDED
+        subscriptionId: activeSub.id, 
       },
       include: {
         nutritionist: { include: { user: true } },
