@@ -145,7 +145,6 @@ const DashboardLayout = ({
                 <div className="text-[0.86rem] font-semibold text-kl-text-dark">
                   {userName}
                 </div>
-                <div className="text-[0.74rem] text-kl-text-l">{userRole}</div>
               </div>
             </div>
           </div>

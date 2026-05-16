@@ -201,7 +201,7 @@ const createPdfPlan = async (nutritionistUserId, file, patientId, title, notes) 
     endDate: null,
     status: 'ACTIVE',          // PDF plans are immediately active
     isTemplate: false,
-    name: title?.trim() || 'Meal Plan PDF',
+    name: title?.trim() || 'Nutrition Plan PDF',
     pdfUrl,
     pdfAssignedAt: new Date(),
     pdfNotes: notes?.trim() || null,
@@ -215,12 +215,12 @@ const createPdfPlan = async (nutritionistUserId, file, patientId, title, notes) 
         await createNotification(
           patientUser.id,
           'PLAN',
-          `A new PDF meal plan (“${plan.name}”) has been assigned to you.`
+          `A new PDF nutrition plan (“${plan.name}”) has been assigned to you.`
         );
         await sendEmail({
           to: patientUser.email,
-          subject: 'New Meal Plan PDF',
-          html: `<p>Your nutritionist has uploaded a new meal plan PDF.</p>
+          subject: 'New Nutrition Plan PDF',
+          html: `<p>Your nutritionist has uploaded a new nutrition plan PDF.</p>
                  <p><strong>${plan.name}</strong></p>
                  <a href="${pdfUrl}" target="_blank">View PDF</a>`,
         });

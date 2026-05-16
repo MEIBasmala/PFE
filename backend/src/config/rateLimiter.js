@@ -18,7 +18,7 @@ const rateLimitHandler = (req, res) => {
 // (a real user never needs to log in 10 times in 15 minutes).
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  max: 100,
   standardHeaders: true,    // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false,     // Disable `X-RateLimit-*` headers
   handler: rateLimitHandler,

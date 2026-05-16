@@ -69,7 +69,7 @@ export default function PatientDashboard() {
 
   return (
     <DashboardLayout
-      title="Patient Dashboard"
+      title="Client Dashboard"
       sections={sections}
       userName={user.fullName}
       userRole="PATIENT"

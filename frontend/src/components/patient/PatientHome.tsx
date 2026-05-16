@@ -682,7 +682,7 @@ export default function PatientHome() {
                   your full potential
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Personalized meal plans, consultations & unlimited AI scans.
+                  Personalized nutrition plans, consultations & unlimited AI scans.
                 </p>
               </div>
               <Button

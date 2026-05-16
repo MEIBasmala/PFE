@@ -311,14 +311,14 @@ export default function PatientBlogPost() {
     </div>
   ) : currentUser ? (
     <p className="text-sm text-muted-foreground mb-4">
-      Only patients can leave comments.
+      Only users can leave comments.
     </p>
   ) : (
     <p className="text-sm text-muted-foreground mb-4">
       <Button variant="link" className="p-0" onClick={() => navigate("/auth")}>
         Sign in
       </Button>{" "}
-      as a patient to join the discussion.
+      as a user to join the discussion.
     </p>
   )}
 

@@ -227,7 +227,7 @@ const Auth = () => {
             </CardTitle>
             <CardDescription className="text-[hsl(var(--text-m))] text-sm mt-1 font-sans">
               {page === 'login' && 'Log in to access your health dashboard'}
-              {page === 'register' && 'Join KhabirLens as a patient'}
+              {page === 'register' && 'Join KhabirLens as a client'}
               {page === 'forgot' && "We'll send a reset link to your email"}
               {page === 'reset' && 'Create a strong password for your account'}
             </CardDescription>

@@ -104,9 +104,9 @@ const getStructuredFeatures = (pkg: Package) => {
       : `${pkg.consultationsPerMonth} per month`;
   const mealPlan =
     pkg.mealPlanType ||
-    (pkg.features.includes("meal plans")
-      ? "Personalised meal plans"
-      : "Pre-built meal plans");
+    (pkg.features.includes("nutrition plans")
+      ? "Personalised nutrition plans"
+      : "Pre-built nutrition plans");
 
   return [
     { icon: Bot, label: `${aiScans} AI scans`, dimmed: false },

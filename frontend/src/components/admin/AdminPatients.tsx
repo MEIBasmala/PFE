@@ -60,7 +60,7 @@ const AdminPatients = () => {
 
     try {
       await api.put(`/admin/patients/${patient.id}/toggle`);
-      toast.success(`Patient ${!patient.user.isActive ? 'activated' : 'deactivated'}`);
+      toast.success(`Client ${!patient.user.isActive ? 'activated' : 'deactivated'}`);
     } catch {
       // ── Rollback on failure ────────────────────────────────
       setPatients(previousPatients);
@@ -78,7 +78,7 @@ const AdminPatients = () => {
 
     try {
       await api.delete(`/admin/patients/${patient.id}`);
-      toast.success('Patient deleted');
+      toast.success('Client deleted');
     } catch {
       // ── Rollback on failure ────────────────────────────────
       setPatients(previousPatients);
@@ -115,7 +115,7 @@ const AdminPatients = () => {
     <div className="page-enter space-y-6">
       {/* Header with responsive stacking */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold tracking-tight">Manage Patients</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Manage Clients</h2>
         <Input
           placeholder="Search by name or email..."
           value={search}
@@ -186,7 +186,7 @@ const AdminPatients = () => {
                 {filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No patients found.
+                      No Clients found.
                     </TableCell>
                   </TableRow>
                 )}
@@ -199,7 +199,7 @@ const AdminPatients = () => {
         {filtered.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
-              No patients found.
+              No clients found.
             </CardContent>
           </Card>
         ) : (
@@ -254,8 +254,8 @@ const AdminPatients = () => {
         open={!!confirmAction}
         onOpenChange={() => setConfirmAction(null)}
         title={
-          confirmAction?.action === 'delete' ? 'Delete Patient' :
-            confirmAction?.action === 'enable' ? 'Enable Patient' : 'Disable Patient'
+          confirmAction?.action === 'delete' ? 'Delete Client' :
+            confirmAction?.action === 'enable' ? 'Enable Client' : 'Disable Client'
         }
         description={
           confirmAction?.action === 'delete'

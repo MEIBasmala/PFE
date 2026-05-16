@@ -66,7 +66,7 @@ export const getPlanById = async (id: string | number) => {
   return transformPlan(response.plan);
 };
 
-// Get prebuilt meal plans (public or authenticated)
+// Get prebuilt nutrition plans (public or authenticated)
 export const getPrebuiltPlans = async (): Promise<UIPlan[]> => {
   const response = await api.get<{ success: boolean; plans: NutritionPlan[] }>('/nutrition-plans/prebuilt');
   return response.plans.map(transformPlan);

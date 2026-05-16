@@ -10,7 +10,7 @@ export const PATIENT_NAV = [
   {
     title: "Plan",
     items: [
-      { id: "nutrition-plans", label: "Meal Plan", icon: "utensils", path: "/patient/nutrition-plans" },
+      { id: "nutrition-plans", label: "Nutrition Plan", icon: "utensils", path: "/patient/nutrition-plans" },
       { id: "recipes", label: "Recipe Library", icon: "book-open", path: "/patient/recipes" },
     ],
   },

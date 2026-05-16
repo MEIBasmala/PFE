@@ -184,7 +184,7 @@ export default function NutritionistAvailability() {
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             Each slot is <strong>45 minutes</strong> — suitable for both initial assessments (45–60 min)
-            and follow-up appointments (30–45 min). Patients will see this duration when booking.
+            and follow-up appointments (30–45 min). Clients will see this duration when booking.
           </span>
         </div>
 

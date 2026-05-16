@@ -101,7 +101,7 @@ export default function NutritionistPatients() {
     navigate("/nutritionist/patients");
   };
 
-  const getPatientName = (p: PatientProfile) => p.user.fullName ?? `Patient #${p.id}`;
+  const getPatientName = (p: PatientProfile) => p.user.fullName ?? `Client #${p.id}`;
   const getPatientEmail = (p: PatientProfile) => p.user.email ?? "";
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
@@ -141,7 +141,7 @@ export default function NutritionistPatients() {
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground">
           <Users className="mx-auto mb-3 h-8 w-8 opacity-40" />
-          <p>No patients assigned yet.</p>
+          <p>No clients assigned yet.</p>
         </CardContent>
       </Card>
     );
@@ -154,7 +154,7 @@ export default function NutritionistPatients() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search patients by name or email..."
+            placeholder="Search clients by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -169,14 +169,14 @@ export default function NutritionistPatients() {
             <CardHeader className="border-b p-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Users className="h-4 w-4" />
-                Patients
+                Clients
               </CardTitle>
             </CardHeader>
             <ScrollArea className="h-[calc(100vh-250px)]">
               <div className="space-y-0.5 p-2">
                 {filteredPatients.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground">
-                    No matching patients.
+                    No matching clients.
                   </div>
                 ) : (
                   filteredPatients.map((p) => {
@@ -230,14 +230,14 @@ export default function NutritionistPatients() {
         ) : patientId && !selectedPatientDetail && !detailLoading ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
-              Patient not found.
+              Client not found.
             </CardContent>
           </Card>
         ) : !patientId && !isMobile ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <User className="mx-auto mb-3 h-8 w-8 opacity-40" />
-              <p>Select a patient from the list to view details.</p>
+              <p>Select a client from the list to view details.</p>
             </CardContent>
           </Card>
         ) : null}

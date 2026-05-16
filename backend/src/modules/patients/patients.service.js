@@ -25,7 +25,8 @@ const getMyPatients = async (userId) => {
       fullName: p.user.fullName,
       email: p.user.email,
     },
-    measurements: p.measurements[0] || null,
+    measurements: p.measurements ?? [],
+
   }));
 };
 

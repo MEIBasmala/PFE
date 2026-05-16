@@ -20,7 +20,7 @@ const transformAppointment = (raw: any): NutritionistAppointment => {
     scheduledAt: dateStr,
     time: raw.slot.startTime,
     status: raw.status,
-    patientName: raw.patient?.user?.fullName || 'Unknown Patient',
+    patientName: raw.patient?.user?.fullName || 'Unknown Client',
     notes: raw.notes || undefined,
     jitsiLink: raw.jitsiLink || undefined, 
   };
@@ -77,7 +77,7 @@ export const nutritionistSlotsApi = {
 };
 
 // ============================================================
-// 5. Meal Plans
+// 5. Nutritioon Plans
 // ============================================================
 export const nutritionistMealPlansApi = {
   list: async () => {

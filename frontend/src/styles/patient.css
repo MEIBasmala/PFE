@@ -157,7 +157,7 @@
   font-size: 0.7rem;
 }
 
-/* ── Meal Plan ── */
+/* ── Nutrition Plan ── */
 .mp-header {
   background: linear-gradient(135deg, hsl(var(--green-light)), hsl(var(--green)));
   border-radius: var(--radius);

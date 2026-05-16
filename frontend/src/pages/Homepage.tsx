@@ -122,7 +122,7 @@ const FALLBACK_PRICING_PLANS: PricingPlan[] = [
     name: 'Basic',
     price: '3 500 DZD',
     period: '/month',
-    features: ['10 AI calorie scans per day', '1 consultation/month (Zoom/Meet)', 'Pre-built meal plans', 'Full recipe library', 'Email support'],
+    features: ['10 AI calorie scans per day', '1 consultation/month (Zoom/Meet)', 'Pre-built nutrition plans', 'Full recipe library', 'Email support'],
     cta: 'Choose Basic',
     featured: false,
     badge: null,
@@ -131,7 +131,7 @@ const FALLBACK_PRICING_PLANS: PricingPlan[] = [
     name: 'Premium',
     price: '6 500 DZD',
     period: '/month',
-    features: ['Unlimited AI scans', '2 consultations/month', 'Personalised meal plans', 'AI chatbot assistant', 'Rotating nutritionist specialists'],
+    features: ['Unlimited AI scans', '2 consultations/month', 'Personalised nutrition plans', 'AI chatbot assistant', 'Rotating nutritionist specialists'],
     cta: 'Go Premium',
     featured: true,
     badge: 'Most Popular',
@@ -331,12 +331,7 @@ useEffect(() => {
   };
 
   /* ── Smart routing helpers ── */
-  /**
-   * Handles "Read Blog" / blog card actions.
-   * - Not logged in → sign-up modal
-   * - PATIENT → navigate to patient blog page
-   * - Other role → modal with role restriction notice
-   */
+
   const handleBlogAction = () => {
     if (!currentUser) {
       setModalReason('signup');
@@ -354,9 +349,6 @@ useEffect(() => {
 
   /**
    * Handles pricing plan CTA clicks.
-   * - Not logged in → sign-up modal
-   * - PATIENT → navigate to patient subscription page
-   * - Other role → modal with role restriction notice
    */
   const handlePricingAction = () => {
     if (!currentUser) {
@@ -404,9 +396,9 @@ useEffect(() => {
     'role-blog': {
       icon: <AlertCircle size={28} className="text-[hsl(var(--orange))]" />,
       iconBg: 'bg-[hsl(var(--orange-20))]',
-      title: 'Patient Area Only',
+      title: 'Client Area Only',
       description:
-        'The blog section is available exclusively for patient accounts. Your current role doesn\'t have access to this page.',
+        'The blog section is available exclusively for client accounts. Your current role doesn\'t have access to this page.',
       footer: (
         <div className="flex gap-3 justify-center pt-2">
           <Button variant="outline" onClick={() => setShowModal(false)}>
@@ -418,9 +410,9 @@ useEffect(() => {
     'role-pricing': {
       icon: <AlertCircle size={28} className="text-[hsl(var(--orange))]" />,
       iconBg: 'bg-[hsl(var(--orange-20))]',
-      title: 'Patient Area Only',
+      title: 'Client Area Only',
       description:
-        'Subscription plans are for patient accounts. Your current role doesn\'t have access to the subscription dashboard.',
+        'Subscription plans are for client accounts. Your current role doesn\'t have access to the subscription dashboard.',
       footer: (
         <div className="flex gap-3 justify-center pt-2">
           <Button variant="outline" onClick={() => setShowModal(false)}>
@@ -801,7 +793,7 @@ useEffect(() => {
             <Button variant="outline" onClick={handleBlogAction}>
               <Lock size={14} className="mr-1" />
               {currentUser
-                ? 'Blog access is for patient accounts'
+                ? 'Blog access is for client accounts'
                 : 'Sign up to read full articles and comment →'}
             </Button>
           )}

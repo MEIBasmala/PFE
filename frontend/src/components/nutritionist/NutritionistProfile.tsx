@@ -138,7 +138,7 @@ export default function NutritionistProfile() {
 
   const stats = [
     { label: "Specialization", value: form.specialization || "—" },
-    { label: "Patients", value: "—" },
+    { label: "Clients", value: "—" },
   ];
 
   return (

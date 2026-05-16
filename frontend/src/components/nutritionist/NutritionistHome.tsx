@@ -121,7 +121,7 @@ export default function NutritionistHome() {
             <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 text-xs sm:py-4" asChild>
               <Link to="/nutritionist/patients">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                View Patients
+                View Clients
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 text-xs sm:py-4" asChild>
@@ -139,7 +139,7 @@ export default function NutritionistHome() {
             <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 text-xs sm:py-4" asChild>
               <Link to="/nutritionist/nutrition-plans">
                 <Inbox className="h-4 w-4 sm:h-5 sm:w-5" />
-                Meal Plans
+                Nutrition Plans
               </Link>
             </Button>
           </CardContent>

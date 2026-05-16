@@ -145,7 +145,7 @@ export default function AppointmentsList() {
           ) : (
             <div className="space-y-3">
               {visible.map((a) => {
-                const name = a.patientName ?? `Patient #${a.id}`;
+                const name = a.patientName ?? `Client #${a.id}`;
                 const dt = new Date(a.scheduledAt);
                 const dateStr = isNaN(dt.getTime()) ? a.scheduledAt : dt.toLocaleDateString();
                 const timeStr = a.time ?? (isNaN(dt.getTime()) ? "" : dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -162,7 +162,7 @@ export default function AppointmentsList() {
                       <div className="text-xs text-muted-foreground">{dateStr}</div>
                     </div>
 
-                    {/* Patient Info */}
+                    {/* Client Info */}
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold">{name}</div>
                       {a.notes && (

@@ -200,7 +200,7 @@ const Navbar = () => {
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-sm font-semibold text-kl-green-dark">{user.fullName}</span>
-                <span className="text-xs text-kl-text-m capitalize">{user.role?.toLowerCase()} Dashboard ↗</span>
+                <span className="text-xs text-kl-text-m capitalize">My Dashboard ↗</span>
               </div>
             </Link>
           </li>
@@ -248,7 +248,6 @@ const Navbar = () => {
                 <span className="text-[0.75rem] font-semibold text-kl-green-dark truncate max-w-[100px]">
                   {user.fullName?.split(' ')[0]}
                 </span>
-                <span className="text-[0.65rem] text-kl-text-m capitalize">{user.role?.toLowerCase()}</span>
               </div>
               <ChevronDown size={14} className={`text-kl-text-m transition-transform ${avatarOpen ? 'rotate-180' : ''}`} />
             </button>

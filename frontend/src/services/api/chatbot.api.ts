@@ -107,7 +107,7 @@ export const chatbotApi = {
         }
       })
       .catch((err) => {
-        if (err.name === 'AbortError') return; // cancelled by user — not an error
+        if (err.name === 'AbortError') return;
         callbacks.onError(err.message || 'Connection failed');
       });
 

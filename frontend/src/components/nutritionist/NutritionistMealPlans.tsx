@@ -180,7 +180,7 @@ export default function NutritionistMealPlans() {
   // ── Submit recipe plan ────────────────────────────────────────────────────
   const submitRecipePlan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!patientId) { toast.error("Select a patient"); return; }
+    if (!patientId) { toast.error("Select a client"); return; }
     if (!startDate || !endDate) { toast.error("Start and end dates required"); return; }
     if (endDate < startDate) { toast.error("End date must be after start date"); return; }
     if (assigned.length === 0) { toast.error("Assign at least one recipe to a meal slot"); return; }
@@ -197,7 +197,7 @@ export default function NutritionistMealPlans() {
 
       await nutritionistMealPlansApi.create({
         patientId,
-        title: title.trim() || `Meal Plan — ${startDate}`,
+        title: title.trim() || `Nutrition Plan — ${startDate}`,
         startDate,
         endDate,
         notes: notes.trim() || undefined,
@@ -217,7 +217,7 @@ export default function NutritionistMealPlans() {
   // ── Submit PDF plan ───────────────────────────────────────────────────────
   const submitPdfPlan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pdfPatientId) { toast.error("Select a patient"); return; }
+    if (!pdfPatientId) { toast.error("Select a client"); return; }
     if (!pdfFile) { toast.error("Select a PDF file"); return; }
     if (pdfFile.type !== "application/pdf") { toast.error("File must be a PDF"); return; }
     if (pdfFile.size > 10 * 1024 * 1024) { toast.error("Max size 10MB"); return; }
@@ -238,7 +238,7 @@ export default function NutritionistMealPlans() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Upload failed");
-      toast.success("PDF meal plan uploaded");
+      toast.success("PDF nutrition plan uploaded");
       setPdfPatientId(0);
       setPdfTitle("");
       setPdfNotes("");
@@ -283,7 +283,7 @@ export default function NutritionistMealPlans() {
           <BookOpen size={16} />
           <span>
             Build from your <strong>{recipes.length} saved recipe{recipes.length !== 1 ? "s" : ""}</strong>.
-            Select patient, set dates, click any meal slot to assign a recipe.
+            Select client, set dates, click any meal slot to assign a recipe.
             <button className="underline font-semibold ml-2" onClick={() => navigate("/nutritionist/recipes")}>
               Manage recipes →
             </button>
@@ -319,13 +319,13 @@ export default function NutritionistMealPlans() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label>Patient *</Label>
+                    <Label>Client *</Label>
                     <Select value={patientId ? String(patientId) : ""} onValueChange={(v) => setPatientId(Number(v))}>
-                      <SelectTrigger><SelectValue placeholder="Select a patient…" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select a client..." /></SelectTrigger>
                       <SelectContent>
                         {patients.map(p => (
                           <SelectItem key={p.id} value={String(p.id)}>
-                            {p.user?.fullName ?? `Patient #${p.id}`}
+                            {p.user?.fullName ?? `Client #${p.id}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -408,12 +408,12 @@ export default function NutritionistMealPlans() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label>Patient *</Label>
+                    <Label>Client *</Label>
                     <Select value={pdfPatientId ? String(pdfPatientId) : ""} onValueChange={(v) => setPdfPatientId(Number(v))}>
-                      <SelectTrigger><SelectValue placeholder="Select a patient…" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select a client…" /></SelectTrigger>
                       <SelectContent>
                         {patients.map(p => (
-                          <SelectItem key={p.id} value={String(p.id)}>{p.user?.fullName ?? `Patient #${p.id}`}</SelectItem>
+                          <SelectItem key={p.id} value={String(p.id)}>{p.user?.fullName ?? `Client #${p.id}`}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -468,7 +468,7 @@ export default function NutritionistMealPlans() {
                           <div className="flex justify-between items-start">
                             <div>
                               <div className="font-bold text-sm flex items-center gap-1"><ChefHat size={12} /> {p.title || "Untitled"}</div>
-                              <div className="text-xs text-muted-foreground">👤 {patient?.user?.fullName ?? `Patient #${p.patientId}`}</div>
+                              <div className="text-xs text-muted-foreground">👤 {patient?.user?.fullName ?? `Client #${p.patientId}`}</div>
                               <div className="text-xs text-muted-foreground">📅 {p.startDate}{p.endDate ? ` → ${p.endDate}` : ""}</div>
                             </div>
                             <Button variant="destructive" size="sm" onClick={() => removePlan(p.id!)}><Trash2 size={13} /></Button>

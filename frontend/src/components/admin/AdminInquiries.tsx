@@ -114,7 +114,7 @@ const AdminInquiries = () => {
                       <div>
                         From:{' '}
                         <span className="font-medium text-foreground">
-                          {inq.patient?.user.fullName ?? `Patient #${inq.patientId}`}
+                          {inq.patient?.user.fullName ?? `Client #${inq.patientId}`}
                         </span>
                         {inq.patient?.user.email && (
                           <span className="ml-1 text-xs">({inq.patient.user.email})</span>
@@ -167,7 +167,7 @@ const AdminInquiries = () => {
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Reply to {replyTo?.patient?.user.fullName ?? `Patient #${replyTo?.patientId}`}
+              Reply to {replyTo?.patient?.user.fullName ?? `Client #${replyTo?.patientId}`}
             </DialogTitle>          </DialogHeader>
           {replyTo && (
             <div className="space-y-4 py-4">

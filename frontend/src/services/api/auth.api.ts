@@ -12,7 +12,7 @@ export const authApi = {
       id: res.user.id,
       fullName: res.user.fullName,
       email: res.user.email,
-      role: res.user.role, // backend returns "PATIENT" etc.
+      role: res.user.role, 
       isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

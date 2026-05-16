@@ -54,7 +54,7 @@ const team = [
     photoUrl: '/team/basmala.jpg',
     role: 'Frontend & UI/UX',
     avatar: 'B',
-    bio: 'Designed and built the entire user interface, from wireframes to responsive dashboards. Ensured a seamless, accessible experience for patients, nutritionists, and admins.',
+    bio: 'Designed and built the entire user interface, from wireframes to responsive dashboards. Ensured a seamless, accessible experience for clients, nutritionists, and admins.',
     tags: ['React / MERN', 'UI/UX Design', 'Responsive', 'Figma'],
     gradient: 'from-kl-green-light to-kl-saffron-light',
   },
@@ -106,7 +106,7 @@ const techStack = [
   {
     icon: Layers,
     title: 'Frontend — React / MERN',
-    desc: 'Three role-specific dashboards (Patient, Nutritionist, Admin) built in React with a unified design system.',
+    desc: 'Three role-specific dashboards (Client, Nutritionist, Admin) built in React with a unified design system.',
     pills: ['React', 'Vite', 'Syne + DM Sans', 'FA6'],
     colorClass: 'bg-[hsl(var(--green-light))]',
     iconColor: 'text-[hsl(var(--green-dark))]',
