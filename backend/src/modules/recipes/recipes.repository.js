@@ -9,9 +9,25 @@ const getRecipeById = async (id) => {
 };
 
 const createRecipe = async (data) => {
-  return await prisma.recipe.create({ data });
+  return await prisma.recipe.create({
+    data: {
+      name: data.name,
+      emoji: data.emoji || '🍽️',
+      kcal: Number(data.kcal) || 0,
+      protein: Number(data.protein) || 0,
+      carbs: Number(data.carbs) || 0,
+      fat: Number(data.fat) || 0,
+      category: data.category || 'general',
+      tags: data.tags || [],
+      imageUrl: data.imageUrl || '',
+      prepTime: data.prepTime || '30 min',
+      description: data.description || null,
+      difficulty: data.difficulty || null,
+      ingredients: data.ingredients || [],
+      instructions: data.instructions || [],
+    },
+  });
 };
-
 const updateRecipe = async (id, data) => {
   return await prisma.recipe.update({ where: { id }, data });
 };

@@ -427,7 +427,7 @@ export default function PatientHome() {
                               style={{ background: color }}
                             />
                             <span className="text-[11px] capitalize text-muted-foreground">
-                              {log.category}
+                              {log.category} {log.source === "recipe" && "· 📖"}
                             </span>
                           </div>
                         </div>
@@ -750,7 +750,7 @@ function StatTile({
   return (
     <Card
       className={cn(
-        "h-full min-h-[130px]", 
+        "h-full min-h-[130px]",
         onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
       )}
       onClick={onClick}

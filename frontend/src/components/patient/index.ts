@@ -2,7 +2,7 @@
 // patient dashboard components
 export { default as PatientHome } from './PatientHome';
 export { default as PatientAITracker } from './PatientAITracker';
-export { default as PatientMealPlan } from './PatientMealPlan';
+export { default as PatientMealPlan } from './PatientNutritionPlan';
 export { default as RecipeLibrary } from './RecipeLibrary';
 export { default as RecipeCard } from './RecipeCard';
 export { default as PatientConsultations } from './PatientConsultations';

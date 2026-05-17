@@ -136,7 +136,7 @@ const DashboardLayout = ({
               }}
             >
               <div
-                className="sb-av"
+                className="w-9 h-9 rounded-full bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center text-[0.9rem] font-bold text-kl-text-dark shadow-[0_2px_8px_rgba(194,230,110,0.35)] transition-all group-hover:-translate-y-0.5"
                 style={{ width: 36, height: 36, fontSize: "0.9rem" }}
               >
                 {userAvatar}

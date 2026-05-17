@@ -26,7 +26,7 @@ const getAllNutritionists = async (req, res) => {
 const togglePatientStatus = async (req, res) => {
   try {
     const result = await adminService.togglePatientStatus(req.user.id, parseInt(req.params.id));
-    res.status(200).json({ success: true, message: 'Patient status updated', result });
+    res.status(200).json({ success: true, message: 'Client status updated', result });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -35,7 +35,7 @@ const togglePatientStatus = async (req, res) => {
 const deletePatient = async (req, res) => {
   try {
     await adminService.deletePatient(req.user.id, parseInt(req.params.id));
-    res.status(200).json({ success: true, message: 'Patient deleted successfully' });
+    res.status(200).json({ success: true, message: 'Client deleted successfully' });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

@@ -32,7 +32,7 @@ const togglePatientStatus = async (userId, patientId) => {
   if (!admin) throw new Error('Admin profile not found');
 
   const patient = await adminRepo.getPatientById(patientId);
-  if (!patient) throw new Error('Patient not found');
+  if (!patient) throw new Error('client not found');
 
   const newStatus = !patient.user.isActive;
   const result = await adminRepo.toggleUserStatus(patient.user.id, newStatus);
@@ -50,7 +50,7 @@ const deletePatient = async (userId, patientId) => {
   if (!admin) throw new Error('Admin profile not found');
 
   const patient = await adminRepo.getPatientById(patientId);
-  if (!patient) throw new Error('Patient not found');
+  if (!patient) throw new Error('Client not found');
 
   await adminRepo.deleteUser(patient.user.id);
   await adminRepo.createAuditLog(

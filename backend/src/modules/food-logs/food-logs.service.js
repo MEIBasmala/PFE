@@ -28,7 +28,7 @@ const getDailyAiUsage = async (userId) => {
 
 const uploadMealImage = async (userId, imageUrl) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);
-  if (!patient) throw new Error('Patient profile not found');
+  if (!patient) throw new Error('Client profile not found');
 
   // ─── AI QUOTA ENFORCEMENT (BACKEND SECURITY) ───────────────────────────────
   // Enforces limits regardless of frontend (curl, postman, etc.)

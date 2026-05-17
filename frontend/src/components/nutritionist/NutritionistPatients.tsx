@@ -252,7 +252,7 @@ export default function NutritionistPatients() {
 function PatientDetailView({ patient, onBack }: { patient: PatientProfile; onBack?: () => void }) {
   const [tab, setTab] = useState<"overview" | "measurements" | "lifestyle">("overview");
 
-  const sortedMeasurements = [...(patient.measurements || [])].sort(
+  const sortedMeasurements = [...(Array.isArray(patient.measurements) ? patient.measurements : [])].sort(
     (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
   );
 

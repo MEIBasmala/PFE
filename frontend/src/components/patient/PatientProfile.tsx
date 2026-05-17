@@ -145,22 +145,21 @@ export default function PatientProfile() {
   }, [draft.age, draft.weight, draft.height, draft.activityLevel, draft.goals, latestWeight]);
 
   const save = async () => {
-    setSaving(true);
-    try {
-      const { fullName, email, phone, ...patientData } = draft;
-      const payload = {
-        ...patientData,
-        dailyCalorieGoal: recomputedGoal ?? draft.dailyCalorieGoal,
-      };
-      await updatePatientProfile(payload);
-      toast.success("Profile updated & calorie goal recalculated");
-      await profile.refetch();
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
+  setSaving(true);
+  try {
+    const payload = {
+      ...draft,
+      dailyCalorieGoal: recomputedGoal ?? draft.dailyCalorieGoal,
+    };
+    await updatePatientProfile(payload);
+    toast.success("Profile updated & calorie goal recalculated");
+    await profile.refetch();
+  } catch (err) {
+    toast.error((err as Error).message);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const stats = [
     { label: "Weight", value: latestWeight != null ? `${latestWeight} kg` : "—" },

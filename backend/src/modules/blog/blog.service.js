@@ -53,7 +53,7 @@ const deleteArticle = async (userId, articleId) => {
 
 const addComment = async (userId, articleId, content) => {
   const patient = await blogRepo.getPatientByUserId(userId);
-  if (!patient) throw new Error('Patient profile not found');
+  if (!patient) throw new Error('Client profile not found');
 
   const article = await blogRepo.getArticleById(articleId);
   if (!article) throw new Error('Article not found');
@@ -67,7 +67,7 @@ const addComment = async (userId, articleId, content) => {
 
 const deleteComment = async (userId, articleId, commentId) => {
   const patient = await blogRepo.getPatientByUserId(userId);
-  if (!patient) throw new Error('Patient profile not found');
+  if (!patient) throw new Error('Client profile not found');
 
   const comment = await blogRepo.getCommentById(commentId);
   if (!comment) throw new Error('Comment not found');

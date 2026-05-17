@@ -5,5 +5,5 @@ export { default as NutritionistAvailability } from './NutritionistAvailability'
 export { default as NutritionistPatients } from './NutritionistPatients';
 export { default as NutritionistMealPlans } from './NutritionistMealPlans';
 export { default as NutritionistMessages } from './NutritionistMessages';
-export { default as NutritionistRecipes } from './NutritionistRecipes';
+// export { default as NutritionistRecipes } from './NutritionistRecipes';
 export { default as NutritionistProfile } from './NutritionistProfile';

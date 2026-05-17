@@ -9,7 +9,7 @@ const subsRepo =  require('../subscriptions/subscriptions.repository');
 // Helper to get patient appointments
 const getPatientAppointments = async (userId) => {
   const patient = await appointmentsRepo.getPatientByUserId(userId);
-  if (!patient) throw new Error('Patient profile not found');
+  if (!patient) throw new Error('Client profile not found');
   return await appointmentsRepo.getPatientAppointments(patient.id);
 };
 
@@ -23,7 +23,7 @@ const getNutritionistAppointments = async (userId) => {
 // Book an appointment (with subscription credit check)
 const bookAppointment = async (userId, { slotId, nutritionistId }) => {
   const patient = await appointmentsRepo.getPatientByUserId(userId);
-  if (!patient) throw new Error('Patient profile not found');
+  if (!patient) throw new Error('Client profile not found');
 
   const slotIdInt = parseInt(slotId, 10);
   if (isNaN(slotIdInt)) throw new Error('Invalid slot ID');
@@ -190,7 +190,7 @@ const cancelAppointment = async (userId, appointmentId, role) => {
         ? appointment.nutritionist.user.id
         : appointment.patient.user.id;
       const slot = appointment.slot;
-      const canceller = (role === 'PATIENT') ? 'the patient' : 'the nutritionist';
+      const canceller = (role === 'PATIENT') ? 'the client' : 'the nutritionist';
       await createNotification(
         otherUserId,
         'APPOINTMENT',

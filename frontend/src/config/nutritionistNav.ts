@@ -11,8 +11,7 @@ export const NUTRITIONIST_NAV = [
   {
     title: "Client Management",
     items: [
-      { id: "nutrition-plans", label: "Create Meal Plan", icon: "utensils", path: "/nutritionist/nutrition-plans" },
-      { id: "recipes", label: "Recipes", icon: "book-open", path: "/nutritionist/recipes" },
+      { id: "nutrition-plans", label: "Nutrition Plans", icon: "utensils", path: "/nutritionist/nutrition-plans" },
     ],
   },
   {

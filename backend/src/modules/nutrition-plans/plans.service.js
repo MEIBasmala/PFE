@@ -4,7 +4,6 @@ const { createNotification } = require('../notifications/notifications.service')
 const usersRepo = require('../users/users.repository');
 const cloudinary = require('../../config/cloudinary');
 
-
 const getMyPlans = async (userId, role) => {
   if (role === 'PATIENT') {
     const patient = await plansRepo.getPatientByUserId(userId);
@@ -30,6 +29,7 @@ const getPrebuiltPlans = async () => {
   return await plansRepo.getPrebuiltPlans();
 };
 
+// Simplified createPlan — no longer accepts meals array or recipe-based data
 const createPlan = async (userId, planData) => {
   const nutritionist = await plansRepo.getNutritionistByUserId(userId);
   if (!nutritionist) throw new Error('Nutritionist profile not found');
@@ -51,10 +51,11 @@ const createPlan = async (userId, planData) => {
   if (!isTemplate && patientId) {
     setImmediate(async () => {
       try {
-        const patientUser = await usersRepo.findById(patientId);
-        if (patientUser) {
+        // patientId is Patient.id — resolve to User for notification
+        const patientProfile = await plansRepo.getPatientById(patientId);
+        if (patientProfile?.userId) {
           await createNotification(
-            patientUser.id,
+            patientProfile.userId,
             'PLAN',
             `A new nutrition plan has been created for you (${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()}). Check your dashboard.`
           );
@@ -65,13 +66,13 @@ const createPlan = async (userId, planData) => {
 
       try {
         // patientId here is the Patient table row id — resolve to User for email
-        const patientProfile = await plansRepo.getPatientByUserId(patientId);
-        if (patientProfile) {
+        const patientProfile = await plansRepo.getPatientById(patientId);
+        if (patientProfile?.userId) {
           const patientUser = await usersRepo.findById(patientProfile.userId);
           if (patientUser) {
             await sendEmail({
               to: patientUser.email,
-              subject: 'KhabirLens — New Nutrition Plan 🥗',
+              subject: 'KhabirLens — New Nutrition Plan',
               html: `<h2>New Nutrition Plan!</h2>
                      <p>Your nutritionist has created a new nutrition plan for you.</p>`,
             });
@@ -127,40 +128,17 @@ const deletePlan = async (userId, planId) => {
   return await plansRepo.deletePlan(planId);
 };
 
-const addMeal = async (userId, planId, { dayNumber, mealType, instructions }) => {
-  const nutritionist = await plansRepo.getNutritionistByUserId(userId);
-  if (!nutritionist) throw new Error('Nutritionist profile not found');
-
-  const plan = await plansRepo.getPlanById(planId);
-  if (!plan) throw new Error('Plan not found');
-  if (plan.nutritionistId !== nutritionist.id) throw new Error('Unauthorized');
-
-  return await plansRepo.createMeal({ planId, dayNumber, mealType, instructions });
+// Meal management removed — nutritionists now only use PDF plans
+const addMeal = async () => {
+  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
 };
 
-const updateMeal = async (userId, planId, mealId, data) => {
-  const nutritionist = await plansRepo.getNutritionistByUserId(userId);
-  if (!nutritionist) throw new Error('Nutritionist profile not found');
-
-  const plan = await plansRepo.getPlanById(planId);
-  if (!plan) throw new Error('Plan not found');
-  if (plan.nutritionistId !== nutritionist.id) throw new Error('Unauthorized');
-
-  const meal = await plansRepo.getMealById(mealId);
-  if (!meal) throw new Error('Meal not found');
-
-  return await plansRepo.updateMeal(mealId, data);
+const updateMeal = async () => {
+  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
 };
 
-const deleteMeal = async (userId, planId, mealId) => {
-  const nutritionist = await plansRepo.getNutritionistByUserId(userId);
-  if (!nutritionist) throw new Error('Nutritionist profile not found');
-
-  const plan = await plansRepo.getPlanById(planId);
-  if (!plan) throw new Error('Plan not found');
-  if (plan.nutritionistId !== nutritionist.id) throw new Error('Unauthorized');
-
-  return await plansRepo.deleteMeal(mealId);
+const deleteMeal = async () => {
+  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
 };
 
 // Helper to upload PDF buffer to Cloudinary
@@ -186,8 +164,8 @@ const createPdfPlan = async (nutritionistUserId, file, patientId, title, notes) 
   const nutritionist = await plansRepo.getNutritionistByUserId(nutritionistUserId);
   if (!nutritionist) throw new Error('Nutritionist profile not found');
 
-  // 2. Validate patient exists
-  const patient = await plansRepo.getPatientByUserId(patientId);
+  // 2. Validate patient exists (patientId is Patient.id, NOT userId)
+  const patient = await plansRepo.getPatientById(patientId);
   if (!patient) throw new Error('Patient not found');
 
   // 3. Upload PDF
@@ -199,26 +177,24 @@ const createPdfPlan = async (nutritionistUserId, file, patientId, title, notes) 
     nutritionistId: nutritionist.id,
     startDate: null,
     endDate: null,
-    status: 'ACTIVE',          // PDF plans are immediately active
+    status: 'ACTIVE',
     isTemplate: false,
     name: title?.trim() || 'Nutrition Plan PDF',
     pdfUrl,
-    pdfAssignedAt: new Date(),
     pdfNotes: notes?.trim() || null,
   });
 
   // 5. Notify patient (async)
   setImmediate(async () => {
     try {
-      const patientUser = await usersRepo.findById(patient.userId);
-      if (patientUser) {
+      if (patient.userId) {
         await createNotification(
-          patientUser.id,
+          patient.userId,
           'PLAN',
-          `A new PDF nutrition plan (“${plan.name}”) has been assigned to you.`
+          `A new PDF nutrition plan ("${plan.name}") has been assigned to you.`
         );
         await sendEmail({
-          to: patientUser.email,
+          to: patient.user.email,
           subject: 'New Nutrition Plan PDF',
           html: `<p>Your nutritionist has uploaded a new nutrition plan PDF.</p>
                  <p><strong>${plan.name}</strong></p>
@@ -230,7 +206,7 @@ const createPdfPlan = async (nutritionistUserId, file, patientId, title, notes) 
     }
   });
 
-  // 6. Return formatted response for frontend
+  // 6. Return formatted response for frontend (use createdAt since pdfAssignedAt doesn't exist)
   return {
     id: plan.id,
     patientId: plan.patientId,
@@ -238,8 +214,8 @@ const createPdfPlan = async (nutritionistUserId, file, patientId, title, notes) 
     title: plan.name,
     notes: plan.pdfNotes,
     pdfUrl: plan.pdfUrl,
-    uploadedAt: plan.pdfAssignedAt,
-    assignedAt: plan.pdfAssignedAt,
+    uploadedAt: plan.createdAt,
+    assignedAt: plan.createdAt,
   };
 };
 
@@ -257,8 +233,8 @@ const getMyPdfPlans = async (nutritionistUserId) => {
       title: plan.name,
       notes: plan.pdfNotes,
       pdfUrl: plan.pdfUrl,
-      uploadedAt: plan.pdfAssignedAt,
-      assignedAt: plan.pdfAssignedAt,
+      uploadedAt: plan.createdAt,
+      assignedAt: plan.createdAt,
     }));
 };
 

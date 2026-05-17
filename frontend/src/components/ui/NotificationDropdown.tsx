@@ -118,7 +118,7 @@ const NotificationDropdown = () => {
         else if (role === 'NUTRITIONIST') navigate('/nutritionist/appointments');
         break;
       case 'PLAN':
-        if (role === 'PATIENT') navigate('/patient/meal-plan');
+        if (role === 'PATIENT') navigate('/patient/nutrition-plans');
         break;
       case 'PAYMENT':
         if (role === 'PATIENT') navigate('/patient/subscription');

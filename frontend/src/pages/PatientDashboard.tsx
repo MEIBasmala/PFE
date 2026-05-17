@@ -16,7 +16,7 @@ const PatientChatbot = lazy(
   () => import("@/components/patient/PatientChatbot"),
 ); 
 const PatientMealPlan = lazy(
-  () => import("@/components/patient/PatientMealPlan"),
+  () => import("@/components/patient/PatientNutritionPlan"),
 );
 const RecipeLibrary = lazy(() => import("@/components/patient/RecipeLibrary"));
 const PatientConsultations = lazy(
@@ -69,7 +69,7 @@ export default function PatientDashboard() {
 
   return (
     <DashboardLayout
-      title="Client Dashboard"
+      title=""
       sections={sections}
       userName={user.fullName}
       userRole="PATIENT"

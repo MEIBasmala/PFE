@@ -13,6 +13,12 @@ import {
   X,
   AlertCircle,
   Loader2,
+  Utensils,      // ← All meals
+  Sunrise,       // ← Breakfast
+  Sun,           // ← Lunch
+  Apple,         // ← Snack
+  Moon,
+  Flame,
 } from "lucide-react";
 import { useDiary } from "@/contexts/DiaryContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -50,14 +56,13 @@ import {
 
 const DEFAULT_GOAL = 1800;
 
-const CATEGORIES: { value: MealCategory | "all"; label: string; emoji: string }[] = [
-  { value: "all", label: "All", emoji: "🍽️" },
-  { value: "breakfast", label: "Breakfast", emoji: "🌅" },
-  { value: "lunch", label: "Lunch", emoji: "☀️" },
-  { value: "snack", label: "Snack", emoji: "🍎" },
-  { value: "dinner", label: "Dinner", emoji: "🌙" },
+const CATEGORIES: { value: MealCategory | "all"; label: string; icon: React.ElementType }[] = [
+  { value: "all", label: "All", icon: Utensils },
+  { value: "breakfast", label: "Breakfast", icon: Sunrise },
+  { value: "lunch", label: "Lunch", icon: Sun },
+  { value: "snack", label: "Snack", icon: Apple },
+  { value: "dinner", label: "Dinner", icon: Moon },
 ];
-
 // Calculate calorie goal using Mifflin‑St Jeor
 function calculateCalorieGoal(profile: PatientProfile | null): { goal: number; missing: string[] } {
   const missing: string[] = [];
@@ -159,26 +164,26 @@ export default function PatientAITracker() {
   };
 
   const analyze = async () => {
-  if (!selectedFile) return;
-  if (remaining <= 0) {
-    toast.error("Daily AI scan limit reached. Upgrade your plan to unlock more.");
-    return;
-  }
-  setAnalyzing(true);
-  try {
-    const created = await uploadImage(selectedFile);
-    if (created) {
-      resetModal();
-      setScanModalOpen(false);
-      await refreshSubscription();
-      toast.success("Meal analysed and added to your diary!");
+    if (!selectedFile) return;
+    if (remaining <= 0) {
+      toast.error("Daily AI scan limit reached. Upgrade your plan to unlock more.");
+      return;
     }
-  } catch (err) {
-    toast.error((err as Error).message || "Failed to analyse meal. Please try again.");
-  } finally {
-    setAnalyzing(false);
-  }
-};
+    setAnalyzing(true);
+    try {
+      const created = await uploadImage(selectedFile);
+      if (created) {
+        resetModal();
+        setScanModalOpen(false);
+        await refreshSubscription();
+        toast.success("Meal analysed and added to your diary!");
+      }
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to analyse meal. Please try again.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const dateObj = new Date(date);
   const shiftDate = (delta: number) => {
@@ -206,8 +211,8 @@ export default function PatientAITracker() {
 
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-3 text-center text-sm md:grid-cols-5">
-            <StatItem icon="🔥" value={totals.calories} label="kcal" />
-            <StatItem icon="✨" value={Math.max(0, goal - totals.calories)} label="Remaining" />
+           <StatItem icon={Flame} value={totals.calories} label="kcal" />
+<StatItem icon={Sparkles} value={Math.max(0, goal - totals.calories)} label="Remaining" />
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -218,7 +223,7 @@ export default function PatientAITracker() {
                 className="cursor-pointer"
                 onClick={() => setFilter(c.value)}
               >
-                <span className="mr-1">{c.emoji}</span>
+                <c.icon className="h-3.5 w-3.5 mr-1" />
                 {c.label}
               </Badge>
             ))}
@@ -339,52 +344,52 @@ export default function PatientAITracker() {
                   </div>
 
                   {analyzing && (
-  <>
-    {/* Warm radial gradient overlay */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent rounded-lg" />
+                    <>
+                      {/* Warm radial gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent rounded-lg" />
 
-    {/* Slow breathing glow (orange) */}
-    <div className="absolute inset-0 rounded-lg border-2 border-[hsl(var(--orange))]/60 animate-slow-pulse" />
+                      {/* Slow breathing glow (orange) */}
+                      <div className="absolute inset-0 rounded-lg border-2 border-[hsl(var(--orange))]/60 animate-slow-pulse" />
 
-    {/* Slow expanding rings (6s cycle) */}
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="relative w-40 h-40">
-        <div className="absolute inset-0 rounded-full border-2 border-[hsl(var(--orange))]/40 animate-slow-ping" />
-        <div className="absolute inset-0 rounded-full border-2 border-[hsl(var(--saffron))]/30 animate-slow-ping [animation-delay:2s]" />
-        <div className="absolute inset-0 rounded-full border border-[hsl(var(--green))]/20 animate-slow-ping [animation-delay:4s]" />
-      </div>
-    </div>
+                      {/* Slow expanding rings (6s cycle) */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="relative w-40 h-40">
+                          <div className="absolute inset-0 rounded-full border-2 border-[hsl(var(--orange))]/40 animate-slow-ping" />
+                          <div className="absolute inset-0 rounded-full border-2 border-[hsl(var(--saffron))]/30 animate-slow-ping [animation-delay:2s]" />
+                          <div className="absolute inset-0 rounded-full border border-[hsl(var(--green))]/20 animate-slow-ping [animation-delay:4s]" />
+                        </div>
+                      </div>
 
-    {/* Slow floating particles (7s cycle) */}
-    {[...Array(8)].map((_, i) => (
-      <div
-        key={i}
-        className="absolute w-1.5 h-1.5 rounded-full animate-slow-float-particle pointer-events-none"
-        style={{
-          left: `${15 + Math.random() * 70}%`,
-          top: `${20 + Math.random() * 60}%`,
-          backgroundColor: i % 3 === 0 ? "hsl(var(--orange))" : i % 3 === 1 ? "hsl(var(--saffron))" : "hsl(var(--green))",
-          animationDelay: `${Math.random() * 3}s`,
-        }}
-      />
-    ))}
+                      {/* Slow floating particles (7s cycle) */}
+                      {[...Array(8)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-1.5 h-1.5 rounded-full animate-slow-float-particle pointer-events-none"
+                          style={{
+                            left: `${15 + Math.random() * 70}%`,
+                            top: `${20 + Math.random() * 60}%`,
+                            backgroundColor: i % 3 === 0 ? "hsl(var(--orange))" : i % 3 === 1 ? "hsl(var(--saffron))" : "hsl(var(--green))",
+                            animationDelay: `${Math.random() * 3}s`,
+                          }}
+                        />
+                      ))}
 
-    {/* Warm corner brackets – slower pulse */}
-    <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
-    <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
-    <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
-    <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+                      {/* Warm corner brackets – slower pulse */}
+                      <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+                      <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+                      <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
+                      <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
 
-    {/* AI badge – slow pulse */}
-    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 text-[11px] font-mono text-[hsl(var(--orange))] flex items-center gap-2 shadow-lg">
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--orange))] opacity-75 [animation-duration:3s]"></span>
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--orange))]"></span>
-      </span>
-      AI analysing...
-    </div>
-  </>
-)}
+                      {/* AI badge – slow pulse */}
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 text-[11px] font-mono text-[hsl(var(--orange))] flex items-center gap-2 shadow-lg">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--orange))] opacity-75 [animation-duration:3s]"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--orange))]"></span>
+                        </span>
+                        AI analysing...
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {!analyzing && (
@@ -437,11 +442,11 @@ export default function PatientAITracker() {
 }
 
 // Helper components 
-function StatItem({ icon, value, label }: { icon: string; value: number | string; label: string }) {
+function StatItem({ icon: Icon, value, label }: { icon: React.ElementType; value: number | string; label: string }) {
   return (
     <div>
-      <div className="font-bold">
-        {icon} <span>{value}</span>
+      <div className="font-bold flex items-center gap-1">
+        <Icon className="h-4 w-4 text-primary" /> <span>{value}</span>
       </div>
       <div className="text-[11px] uppercase text-muted-foreground">{label}</div>
     </div>
@@ -454,12 +459,14 @@ function DiaryEntry({ log, onDelete }: { log: UIFoodLog; onDelete: () => void })
       {log.imageUrl ? (
         <img src={log.imageUrl} alt={log.name} className="h-12 w-12 rounded-lg object-cover" />
       ) : (
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-lg">🍽️</div>
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+          <Utensils className="h-5 w-5 text-primary" />
+        </div>
       )}
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">{log.name}</div>
         <div className="text-xs capitalize text-muted-foreground">
-          {log.category} · {log.source === "ai" ? "AI" : log.source}
+          {log.category} · {log.source === "ai" ? "AI" : log.source === "recipe" ? "Recipe" : log.source}
         </div>
       </div>
       <div className="whitespace-nowrap text-sm font-bold text-primary">{log.calories} kcal</div>

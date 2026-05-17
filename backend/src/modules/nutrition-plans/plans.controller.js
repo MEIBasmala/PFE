@@ -45,36 +45,27 @@ const deletePlan = async (req, res) => {
   }
 };
 
+// Recipe-based meal endpoints removed — nutritionists now use PDF plans only
+// Keeping stubs that return 410 Gone for backward compatibility
 const addMeal = async (req, res) => {
-  try {
-    const meal = await plansService.addMeal(req.user.id, parseInt(req.params.id), req.body);
-    res.status(201).json({ success: true, message: 'Meal added successfully', meal });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
+  res.status(410).json({ 
+    success: false, 
+    message: 'Recipe-based meal planning is no longer supported. Please use PDF plans instead.' 
+  });
 };
 
 const updateMeal = async (req, res) => {
-  try {
-    const meal = await plansService.updateMeal(
-      req.user.id, parseInt(req.params.planId),
-      parseInt(req.params.mealId), req.body
-    );
-    res.status(200).json({ success: true, message: 'Meal updated successfully', meal });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
+  res.status(410).json({ 
+    success: false, 
+    message: 'Recipe-based meal planning is no longer supported. Please use PDF plans instead.' 
+  });
 };
 
 const deleteMeal = async (req, res) => {
-  try {
-    await plansService.deleteMeal(
-      req.user.id, parseInt(req.params.planId), parseInt(req.params.mealId)
-    );
-    res.status(200).json({ success: true, message: 'Meal deleted successfully' });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
+  res.status(410).json({ 
+    success: false, 
+    message: 'Recipe-based meal planning is no longer supported. Please use PDF plans instead.' 
+  });
 };
 
 const getPrebuiltPlans = async (req, res) => {

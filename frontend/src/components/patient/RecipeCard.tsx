@@ -1,9 +1,9 @@
 // src/components/patient/RecipeCard.tsx
 import { useState } from "react";
-import { Clock, BookOpenText, List, ChefHat } from "lucide-react";
+import { Clock, BookOpenText, List, ChefHat, Heart } from "lucide-react";
+import { useDiary } from "@/contexts/DiaryContext";  // ← ADD THIS
 import type { Recipe } from "@/types/api";
 import { toast } from "sonner";
-import { logRecipeToDiary } from "@/services/api";
 import {
   Card,
   CardContent,
@@ -22,16 +22,19 @@ interface RecipeCardProps {
 }
 
 export default function RecipeCard({ recipe, onLog }: RecipeCardProps) {
+  const { addLog } = useDiary();  // ← USE THIS
   const [open, setOpen] = useState(false);
   const [logging, setLogging] = useState(false);
 
   const handleLog = async () => {
     setLogging(true);
     try {
-      await logRecipeToDiary(recipe.id, {
-        date: new Date().toISOString().split("T")[0],
-        mealType: recipe.category === "ramadan" ? "dinner" : recipe.category,
-        time: new Date().toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }),
+      await addLog({
+        name: recipe.name,
+        category: (recipe.category === "ramadan" ? "dinner" : recipe.category) as any,
+        calories: recipe.kcal,
+        source: "recipe",
+        imageUrl: recipe.imageUrl,
       });
       toast.success(`Added ${recipe.name} to your diary`);
       onLog?.();

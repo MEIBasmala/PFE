@@ -65,7 +65,6 @@ const AdminAuditLogs = () => {
     <div className="page-enter space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Audit Logs</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="w-full overflow-x-auto">   {/* ← add this wrapper div */}

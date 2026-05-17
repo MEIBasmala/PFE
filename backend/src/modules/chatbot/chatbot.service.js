@@ -247,7 +247,7 @@ const chat = async (userId, message, history = [], res) => {
 
   const patient = await prisma.patient.findUnique({ where: { userId } });
   if (!patient) {
-    res.write(`data: ${JSON.stringify({ error: 'Patient profile not found' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ error: 'Client profile not found' })}\n\n`);
     res.end();
     return;
   }
@@ -289,7 +289,7 @@ const pkg = await getPatientPackage(userId);
   //  Get Context
   const context = await getDynamicContext(userId, intent);
   if (!context) {
-    res.write(`data: ${JSON.stringify({ error: 'Patient not found' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ error: 'Client not found' })}\n\n`);
     res.end();
     return;
   }
@@ -397,7 +397,7 @@ const getChatHistory = async (userId, page = 1, limit = 20) => {
   const patient = await prisma.patient.findUnique({
     where: { userId }
   });
-  if (!patient) throw new Error('Patient not found');
+  if (!patient) throw new Error('Client not found');
 
   const skip = (page - 1) * limit;
 

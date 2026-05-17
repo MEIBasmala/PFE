@@ -72,7 +72,7 @@ model Patient {
   progress         Progress[]
   subscriptions    Subscription[]
   chatbotMessages  ChatbotMessage[] 
-
+  savedRecipes     SavedRecipe[] 
   user             User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("patients")
@@ -214,23 +214,23 @@ model Appointment {
 
   @@map("appointments")
 }
+
+
 model NutritionPlan {
   id             Int          @id @default(autoincrement())
   patientId      Int?
   nutritionistId Int?
+  meals Meal[] 
   startDate      DateTime?
   endDate        DateTime?
-  status         PlanStatus   @default(DRAFT)
+  status         PlanStatus   @default(ACTIVE)
   isTemplate     Boolean      @default(false)   
   name           String?                    
   durationDays   Int?                       
-
-  pdfUrl         String?                     // cloud storage URL – if set, it's a PDF plan
-  pdfNotes       String?    @db.Text         // optional notes specific to PDF plan
-
+  pdfUrl         String?                    
+  pdfNotes       String?    @db.Text         
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  meals          Meal[]
   nutritionist   Nutritionist? @relation(fields: [nutritionistId], references: [id])
   patient        Patient?      @relation(fields: [patientId], references: [id], onDelete: SetNull)
 
@@ -257,6 +257,18 @@ model Recipe {
   instructions String[]
 
   @@map("recipes")
+}
+
+model SavedRecipe {
+  id        Int      @id @default(autoincrement())
+  patientId Int
+  recipeId  String
+  createdAt DateTime @default(now())
+  
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  @@unique([patientId, recipeId])
+  @@map("saved_recipes")
 }
 
 model Meal {

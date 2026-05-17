@@ -5,7 +5,6 @@ import type {
   Nutritionist,
   PatientProfile,
   NutritionPlan,
-  Recipe,
   Message,
   AvailableSlot,
   NutritionistAppointment
@@ -25,6 +24,7 @@ const transformAppointment = (raw: any): NutritionistAppointment => {
     jitsiLink: raw.jitsiLink || undefined, 
   };
 };
+
 // ============================================================
 // 1. Profile
 // ============================================================
@@ -53,6 +53,7 @@ export const nutritionistAppointmentsApi = {
   complete: (id: number, notes?: string) =>
     apiFetch<{ success: boolean; appointment: any }>(`/appointments/${id}/complete`, { method: 'PUT', body: JSON.stringify({ notes }) }),
 };
+
 // ============================================================
 // 3. Patients
 // ============================================================
@@ -77,65 +78,31 @@ export const nutritionistSlotsApi = {
 };
 
 // ============================================================
-// 5. Nutritioon Plans
+// 5. Nutrition Plans (PDF-only)
 // ============================================================
 export const nutritionistMealPlansApi = {
   list: async () => {
     const res = await apiFetch<{ success: true; plans: NutritionPlan[] }>('/nutrition-plans/my');
-    const mealPlans = res.plans.map(p => ({
-      id: p.id,
-      patientId: p.patientId,
-      title: `Plan from ${new Date(p.startDate).toLocaleDateString()}`,
-      startDate: p.startDate.slice(0, 10),
-      endDate: p.endDate?.slice(0, 10) || '',
-      notes: '',
-      meals: p.meals.flatMap(m =>
-        m.foodItems.map(fi => ({
-          type: m.mealType.toLowerCase(),
-          name: fi.name,
-          calories: fi.calories,
-        }))
-      ),
-    }));
-    return { success: true, mealPlans };
+    // Return empty mealPlans since we no longer build recipe-based plans
+    return { success: true, mealPlans: [] };
   },
- create: (data: {
-  patientId: number;
-  startDate: string;
-  endDate: string;
-  title?: string;
-  notes?: string;
-  meals?: Array<{
-    type: string;
-    name: string;
-    calories: number;
-    recipeId?: string;
-    dayIndex?: number;
-  }>;
-}) =>
-  apiFetch<{ success: boolean; plan: NutritionPlan }>('/nutrition-plans', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  remove: (id: string | number) =>
-    apiFetch<{ success: boolean }>(`/nutrition-plans/${id}`, { method: 'DELETE' }),
-};
-// ============================================================
-// 6. Recipes
-// ============================================================
-export const nutritionistRecipesApi = {
-  list: () => apiFetch<{ success: boolean; recipes: Recipe[] }>('/recipes'),
-  create: (data: Omit<Recipe, 'id'>) =>
-    apiFetch<{ success: boolean; recipe: Recipe }>('/recipes', {
+  create: (data: {
+    patientId: number;
+    startDate: string;
+    endDate: string;
+    title?: string;
+    notes?: string;
+  }) =>
+    apiFetch<{ success: boolean; plan: NutritionPlan }>('/nutrition-plans', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   remove: (id: string | number) =>
-    apiFetch<{ success: boolean }>(`/recipes/${id}`, { method: 'DELETE' }),
+    apiFetch<{ success: boolean }>(`/nutrition-plans/${id}`, { method: 'DELETE' }),
 };
 
 // ============================================================
-// 7. Messaging (Conversations & Messages)
+// 6. Messaging (Conversations & Messages)
 // ============================================================
 export const nutritionistMessagesApi = {
   conversations: () =>

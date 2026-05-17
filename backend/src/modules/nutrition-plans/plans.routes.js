@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const plansController = require('./plans.controller');
-const { validateCreatePlan, validateAddMeal } = require('./plans.validation');
+const { validateCreatePlan } = require('./plans.validation');
 const { protect, authorize } = require('../../middleware/auth');
 const multer = require('multer');
 
@@ -23,7 +23,10 @@ router.get('/:id', protect, plansController.getPlanById);
 router.post('/', protect, authorize('NUTRITIONIST'), validateCreatePlan, plansController.createPlan);
 router.put('/:id', protect, authorize('NUTRITIONIST'), plansController.updatePlan);
 router.delete('/:id', protect, authorize('NUTRITIONIST'), plansController.deletePlan);
-router.post('/:id/meals', protect, authorize('NUTRITIONIST'), validateAddMeal, plansController.addMeal);
+
+// Recipe-based meal management endpoints removed — nutritionists now use PDF plans only
+// Old meal routes return 410 Gone for backward compatibility
+router.post('/:id/meals', protect, authorize('NUTRITIONIST'), plansController.addMeal);
 router.put('/:planId/meals/:mealId', protect, authorize('NUTRITIONIST'), plansController.updateMeal);
 router.delete('/:planId/meals/:mealId', protect, authorize('NUTRITIONIST'), plansController.deleteMeal);
 

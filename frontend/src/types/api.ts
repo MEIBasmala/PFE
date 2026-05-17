@@ -233,7 +233,7 @@ export interface UIFoodLog {
   category: MealCategory;
   calories: number;
   imageUrl?: string;
-  source: "ai" | "manual" | "plan";
+  source: "ai" | "manual" | "plan"| "recipe";
   loggedAt: ISODateString;
   notes?: string;
 }
@@ -267,29 +267,22 @@ export interface Meal {
   foodItems: FoodItem[];
 }
 
-/** UI helper for lightweight meal entries inside a plan form */
-export interface NutritionPlanMeal {
-  type: MealCategory | string;
-  name: string;
-  calories?: number;
-  notes?: string;
-}
-
-// api.ts - inside Nutrition Plans section
-
 export interface NutritionPlan {
   id: number;
-  patientId?: number | null;        // optional for templates
-  nutritionistId?: number | null;   // optional for templates
-  startDate?: ISODateString | null; // optional for templates
-  endDate?: ISODateString | null;   // optional for templates
+  patientId?: number | null;
+  nutritionistId?: number | null;
+  startDate?: ISODateString | null;
+  endDate?: ISODateString | null;
   status: "DRAFT" | "ACTIVE" | "EXPIRED";
-  isTemplate: boolean;              // NEW
-  name?: string | null;             // template name
-  durationDays?: number | null;     // e.g. 7 for weekly plans
-  meals?: Meal[];
+  isTemplate: boolean;
+  name?: string | null;
+  pdfUrl?: string | null;
+  pdfNotes?: string | null;
+  meals?: any[];             
   createdAt?: ISODateString;
   updatedAt?: ISODateString;
+  patient?: Patient | null;
+  nutritionist?: Nutritionist | null;
 }
 
 /** Lightweight UI plan (e.g. creation form, drafts without an id yet) */
@@ -300,7 +293,6 @@ export interface NutritionPlanDraft {
   startDate: string;
   endDate?: string;
   notes?: string;
-  meals: NutritionPlanMeal[];
 }
 
 // UI-friendly meal type (with name, calories, macros)
@@ -323,7 +315,7 @@ export interface UIDay {
 export interface UIPlan {
   id: number;
   title: string;
-  days: UIDay[];
+  days: { day: number; meals: any[] }[];
   dailyCalorieTarget: number;
   status: string;
   startDate: string;
@@ -546,4 +538,3 @@ export interface ContactPayload {
   email: string;
   message: string;
 }
-

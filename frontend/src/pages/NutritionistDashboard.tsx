@@ -13,7 +13,7 @@ const AvailabilityPage = lazy(() => import('@/components/nutritionist/Nutritioni
 const PatientsPage = lazy(() => import('@/components/nutritionist/NutritionistPatients')); // Combined list + detail
 const MealPlansPage = lazy(() => import('@/components/nutritionist/NutritionistMealPlans'));
 const MessagesPage = lazy(() => import('@/components/nutritionist/NutritionistMessages'));
-const RecipeLibrary = lazy(() => import('@/components/nutritionist/NutritionistRecipes'));
+// const RecipeLibrary = lazy(() => import('@/components/nutritionist/NutritionistRecipes'));
 const NutritionistProfile = lazy(() => import('@/components/nutritionist/NutritionistProfile'));
 
 // Loading fallback for route transitions
@@ -71,7 +71,7 @@ export default function NutritionistDashboard() {
           <Route path="patients/:patientId" element={<PatientsPage />} />
           <Route path="nutrition-plans" element={<MealPlansPage />} />
           <Route path="messages" element={<MessagesPage />} />
-          <Route path="recipes" element={<RecipeLibrary />} />
+          {/* <Route path="recipes" element={<RecipeLibrary />} /> */}
           <Route path="profile" element={<NutritionistProfile />} />
           <Route path="*" element={<Navigate to="/nutritionist" replace />} />
         </Routes>
