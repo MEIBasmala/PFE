@@ -160,7 +160,7 @@ const callGeminiStream = async (context, history, message) => {
       parts: [{ text: msg.content }]
     })),
     generationConfig: {
-      maxOutputTokens: 800 ,
+      maxOutputTokens: 800,
       temperature: 0.7
     }
   });
@@ -245,6 +245,11 @@ const chat = async (userId, message, history = [], res) => {
   const startTime = Date.now();
   const intent = detectIntent(message);
 
+  //  Set SSE headers FIRST — before any res.write()
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
   const patient = await prisma.patient.findUnique({ where: { userId } });
   if (!patient) {
     res.write(`data: ${JSON.stringify({ error: 'Client profile not found' })}\n\n`);
@@ -252,7 +257,7 @@ const chat = async (userId, message, history = [], res) => {
     return;
   }
 
-const pkg = await getPatientPackage(userId);
+  const pkg = await getPatientPackage(userId);
   if (!pkg || !pkg.chatbot) {
     res.write(`data: ${JSON.stringify({ error: 'Chatbot not included in your current plan. Upgrade to unlock.' })}\n\n`);
     res.end();
@@ -261,31 +266,9 @@ const pkg = await getPatientPackage(userId);
   
   log('start', { userId, intent, messageLength: message.length });
 
-  // SSE headers
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  // Typing indicator
-  sendTyping(res);
-  log('typing', { message: 'Typing event sent' });
-
-  //  Check Cache 
-  if (isGeneralQuestion(message)) {
-    const cacheKey = normalize(message);
-    const cached = getCached(cacheKey);
-
-    if (cached) {
-      log('cache', { message: 'Cache hit!' });
-      res.write(`data: ${JSON.stringify({ text: cached, provider: 'cache' })}\n\n`);
-      res.write(`event: done\ndata: ${JSON.stringify({ fullResponse: cached, provider: 'cache' })}\n\n`);
-      res.end();
-      return;
-    }
 
 
-  }
-
+  
   //  Get Context
   const context = await getDynamicContext(userId, intent);
   if (!context) {

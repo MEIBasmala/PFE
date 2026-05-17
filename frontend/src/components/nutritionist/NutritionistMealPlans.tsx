@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { nutritionistPatientsApi, nutritionistMealPlansApi } from "@/services/api";
 import type { PatientProfile } from "@/types/api";
-
+import { getToken } from "@/services/api/client";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,8 +53,7 @@ export default function NutritionistMealPlans() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
-
+  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   // ── Load all data ──────────────────────────────────────────────────────────
   const load = async () => {
     setLoading(true);
@@ -62,7 +61,7 @@ export default function NutritionistMealPlans() {
       const [patientsRes, pdfRes] = await Promise.all([
         nutritionistPatientsApi.my(),
         fetch(`${BASE_URL}/nutrition-plans/pdf-plans`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("kl_token")}` },
+          headers: { Authorization: `Bearer ${getToken()}` },
         }).then(res => res.json())
       ]);
       setPatients(patientsRes.patients ?? []);
@@ -94,7 +93,7 @@ export default function NutritionistMealPlans() {
     formData.append("pdfFile", pdfFile);
 
     try {
-      const token = localStorage.getItem("kl_token");
+      const token = getToken();
       const res = await fetch(`${BASE_URL}/nutrition-plans/upload-pdf`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -155,22 +154,22 @@ export default function NutritionistMealPlans() {
               </div>
               <div className="space-y-1.5">
                 <Label>Notes (optional)</Label>
-                <textarea 
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none" 
-                  rows={2} 
-                  value={pdfNotes} 
-                  placeholder="Additional instructions…" 
-                  onChange={e => setPdfNotes(e.target.value)} 
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                  rows={2}
+                  value={pdfNotes}
+                  placeholder="Additional instructions…"
+                  onChange={e => setPdfNotes(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>PDF File *</Label>
                 <div className="flex items-center gap-2">
-                  <Input 
-                    type="file" 
-                    accept="application/pdf" 
-                    onChange={e => setPdfFile(e.target.files?.[0] || null)} 
-                    className="flex-1" 
+                  <Input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={e => setPdfFile(e.target.files?.[0] || null)}
+                    className="flex-1"
                   />
                   {pdfFile && <Badge variant="secondary">{pdfFile.name}</Badge>}
                 </div>

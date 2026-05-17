@@ -11,19 +11,5 @@ const validateCreatePlan = (req, res, next) => {
   next();
 };
 
-const validateAddMeal = (req, res, next) => {
-  const { dayNumber, mealType } = req.body;
 
-  if (!dayNumber || isNaN(dayNumber)) {
-    return res.status(400).json({ success: false, message: 'Valid day number is required' });
-  }
-
-  const validTypes = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
-  if (!mealType || !validTypes.includes(mealType)) {
-    return res.status(400).json({ success: false, message: 'Valid meal type is required (BREAKFAST, LUNCH, DINNER, SNACK)' });
-  }
-
-  next();
-};
-
-module.exports = { validateCreatePlan, validateAddMeal };
+module.exports = { validateCreatePlan };

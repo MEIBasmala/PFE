@@ -30,8 +30,9 @@ const uploadMealImage = async (userId, imageUrl) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Client profile not found');
 
-  // ─── AI QUOTA ENFORCEMENT (BACKEND SECURITY) ───────────────────────────────
-  // Enforces limits regardless of frontend (curl, postman, etc.)
+   // ─── AI QUOTA ENFORCEMENT (BACKEND SECURITY) ───────────────────────────────
+  const FREE_DAILY_SCANS = 2;
+
   const activeSub = await prisma.subscription.findFirst({
     where: {
       patientId: patient.id,
@@ -41,12 +42,8 @@ const uploadMealImage = async (userId, imageUrl) => {
     include: { package: true },
   });
 
-  // No active subscription → deny (NO guessing, NO fallback logic)
-  if (!activeSub) {
-    throw new Error('No active subscription. Please subscribe to use AI scanning.');
-  }
-
-  const dailyLimit = activeSub.package.aiScansPerDay;
+  // Fallback to free tier if no subscription exists
+  const dailyLimit = activeSub?.package?.aiScansPerDay ?? FREE_DAILY_SCANS;
   const usedToday = await foodLogsRepo.countTodayAiScans(patient.id);
 
   if (usedToday >= dailyLimit) {
@@ -55,7 +52,6 @@ const uploadMealImage = async (userId, imageUrl) => {
     );
   }
   // ───────────────────────────────────────────────────────────────────────────
-
   let detectedFoods = null;
   let totalCalories = null;
   let confidenceScore = null;

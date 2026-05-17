@@ -61,10 +61,24 @@ const addMeasurement = async (req, res) => {
   }
 };
 
+const getUsersByRole = async (req, res) => {
+  try {
+    const role = req.params.role;
+    const users = await usersService.getUsersByRole(role);
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.message || 'Internal server error',
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
   getUserById,
+  getUsersByRole,
   addMeasurement,
 };

@@ -6,7 +6,6 @@ export * from './appointments.api';
 export * from './food-logs.api';
 export * from './blog.api';
 export * from './inquiries.api';
-export * from './dashboard.api';
 export * from './admin.api';
 export * from './nutrition-plans.api';
 export * from './progress.api';

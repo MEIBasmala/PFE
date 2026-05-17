@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const prisma = require('../config/db');
 
+const hashToken = (token) =>
+  crypto.createHash('sha256').update(token).digest('hex');
 // Generate short-lived access token (15-60 min)
 const generateAccessToken = (user) => {
   return jwt.sign(
@@ -18,16 +20,17 @@ const generateRefreshToken = () => {
 
 // Store refresh token in DB for a user
 const storeRefreshToken = async (userId, refreshToken) => {
+  const hashedToken = hashToken(refreshToken);
   await prisma.user.update({
     where: { id: userId },
-    data: { refreshToken },
+    data: { refreshToken: hashedToken },
   });
 };
-
 // Verify refresh token exists and is valid
 const verifyRefreshToken = async (refreshToken) => {
+  const hashedToken = hashToken(refreshToken);
   const user = await prisma.user.findFirst({
-    where: { refreshToken },
+    where: { refreshToken: hashedToken },
   });
   if (!user) throw new Error('Invalid or expired refresh token');
   return user;

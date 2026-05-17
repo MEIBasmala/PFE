@@ -24,10 +24,5 @@ router.post('/', protect, authorize('NUTRITIONIST'), validateCreatePlan, plansCo
 router.put('/:id', protect, authorize('NUTRITIONIST'), plansController.updatePlan);
 router.delete('/:id', protect, authorize('NUTRITIONIST'), plansController.deletePlan);
 
-// Recipe-based meal management endpoints removed — nutritionists now use PDF plans only
-// Old meal routes return 410 Gone for backward compatibility
-router.post('/:id/meals', protect, authorize('NUTRITIONIST'), plansController.addMeal);
-router.put('/:planId/meals/:mealId', protect, authorize('NUTRITIONIST'), plansController.updateMeal);
-router.delete('/:planId/meals/:mealId', protect, authorize('NUTRITIONIST'), plansController.deleteMeal);
 
 module.exports = router;

@@ -124,13 +124,3 @@ export const exportPaymentsCSV = async () => {
   }
 };
 
-// ── Legacy object (keep temporarily if other files still import adminApi.X)
-// Remove once all call sites are migrated to the named exports above.
-export const adminApi = {
-  getAdminStats,
-  getAdminBlogPosts,
-  createBlogPost,
-  getAdminSubscriptions,
-  getAllPayments: getAdminPayments,
-  exportPaymentsCSV,
-};

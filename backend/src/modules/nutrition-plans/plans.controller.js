@@ -45,28 +45,6 @@ const deletePlan = async (req, res) => {
   }
 };
 
-// Recipe-based meal endpoints removed — nutritionists now use PDF plans only
-// Keeping stubs that return 410 Gone for backward compatibility
-const addMeal = async (req, res) => {
-  res.status(410).json({ 
-    success: false, 
-    message: 'Recipe-based meal planning is no longer supported. Please use PDF plans instead.' 
-  });
-};
-
-const updateMeal = async (req, res) => {
-  res.status(410).json({ 
-    success: false, 
-    message: 'Recipe-based meal planning is no longer supported. Please use PDF plans instead.' 
-  });
-};
-
-const deleteMeal = async (req, res) => {
-  res.status(410).json({ 
-    success: false, 
-    message: 'Recipe-based meal planning is no longer supported. Please use PDF plans instead.' 
-  });
-};
 
 const getPrebuiltPlans = async (req, res) => {
   try {
@@ -111,6 +89,6 @@ const getMyPdfPlans = async (req, res) => {
 
 module.exports = {
   getMyPlans, getPlanById, createPlan, updatePlan,
-  deletePlan, addMeal, updateMeal, deleteMeal, getPrebuiltPlans,
+  deletePlan, getPrebuiltPlans,
   uploadPdfPlan, getMyPdfPlans
 };

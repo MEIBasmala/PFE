@@ -202,10 +202,49 @@ const addMeasurement = async (userId, data) => {
   });
 };
 
+const VALID_ROLES = ['PATIENT', 'NUTRITIONIST', 'ADMIN'];
+
+const getUsersByRole = async (role) => {
+  const normalizedRole = role?.toUpperCase();
+  
+  if (!VALID_ROLES.includes(normalizedRole)) {
+    const error = new Error('Invalid role');
+    error.status = 400;
+    throw error;
+  }
+
+  const users = await prisma.user.findMany({
+    where: { role: normalizedRole, isActive: true },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      nutritionist: {
+        select: {
+          id: true,
+          specialization: true,
+          bio: true,
+        },
+      },
+      patient: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  return users;
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
   getUserById,
   addMeasurement,
+  getUsersByRole,
 };

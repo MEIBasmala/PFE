@@ -27,7 +27,6 @@ const ALLOWED_FILE_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/plain",
   "text/csv",
-  "application/zip",
 ];
 
 // ── Multer storage ───────────────────────────────────────────────────────────

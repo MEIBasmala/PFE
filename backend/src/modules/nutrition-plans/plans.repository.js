@@ -115,18 +115,6 @@ const deletePlan = async (id) => {
   });
 };
 
-// Meal / FoodItem functions — kept for legacy but not used by NutritionPlan
-const createMeal = async (data) => {
-  return await prisma.meal.create({ data, include: { foodItems: true } });
-};
-
-const updateMeal = async (id, data) => {
-  return await prisma.meal.update({ where: { id: Number(id) }, data });
-};
-
-const deleteMeal = async (id) => {
-  return await prisma.meal.delete({ where: { id: Number(id) } });
-};
 
 const getMealById = async (id) => {
   return await prisma.meal.findUnique({ where: { id: Number(id) } });
@@ -156,9 +144,6 @@ module.exports = {
   createPlan,
   updatePlan,
   deletePlan,
-  createMeal,
-  updateMeal,
-  deleteMeal,
   getMealById,
   getPatientByUserId,
   getNutritionistByUserId,

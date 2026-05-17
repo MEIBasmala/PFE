@@ -79,15 +79,3 @@ export const updatePlan = (id: string | number, data: Partial<NutritionPlan>) =>
 export const deletePlan = (id: string | number) =>
   api.delete<{ success: boolean }>(`/nutrition-plans/${id}`);
 
-// Meal management endpoints removed
-export const addMealToPlan = () => {
-  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
-};
-
-export const updateMealInPlan = () => {
-  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
-};
-
-export const deleteMealFromPlan = () => {
-  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
-};

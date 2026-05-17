@@ -179,7 +179,7 @@ export interface Appointment {
 
 export interface NutritionistAppointment {
   id: number;
-  scheduledAt: ISODateString; // YYYY-MM-DD
+  scheduledAt: string; // YYYY-MM-DD
   time: string;               // HH:MM
   status: AppointmentStatus;
   patientName: string;

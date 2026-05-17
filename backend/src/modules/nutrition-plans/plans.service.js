@@ -128,18 +128,6 @@ const deletePlan = async (userId, planId) => {
   return await plansRepo.deletePlan(planId);
 };
 
-// Meal management removed — nutritionists now only use PDF plans
-const addMeal = async () => {
-  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
-};
-
-const updateMeal = async () => {
-  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
-};
-
-const deleteMeal = async () => {
-  throw new Error('Recipe-based meal planning is no longer supported. Please use PDF plans instead.');
-};
 
 // Helper to upload PDF buffer to Cloudinary
 const uploadPdfToCloudinary = (buffer, originalName) => {
@@ -244,9 +232,6 @@ module.exports = {
   createPlan,
   updatePlan,
   deletePlan,
-  addMeal,
-  updateMeal,
-  deleteMeal,
   getPrebuiltPlans,
   createPdfPlan,
   getMyPdfPlans,

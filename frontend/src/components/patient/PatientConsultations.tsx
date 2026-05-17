@@ -52,17 +52,7 @@ export default function PatientConsultations() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("upcoming");
   const appts = useAsync(() => getMyAppointments(), [], { toastOnError: false });
-const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscription } = useSubscription();  // FIX: Also fetch nutritionists to get userId mapping for appointments
-  const nutritionists = useAsync(() => getNutritionists(), [], { toastOnError: false });
-
-  // Build a map of nutritionist table ID -> userId for quick lookup
-  const nutritionistUserIdMap = useMemo(() => {
-    const map = new Map<number, number>();
-    nutritionists.data?.forEach((n) => {
-      map.set(n.id, n.userId);
-    });
-    return map;
-  }, [nutritionists.data]);
+const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscription } = useSubscription();
 
   const appointments = Array.isArray(appts.data) ? appts.data : [];
   const now = Date.now();
@@ -74,21 +64,21 @@ const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscript
   );
 
   const usedThisMonth = useMemo(() => {
-  // If no active subscription, no credits available
-  if (!subscription?.startDate) return 0;
-  
-  const subscriptionStart = new Date(subscription.startDate);
-  
-  return appointments.filter((a) => {
-    if (a.status === "CANCELLED") return false;
-    // Only count appointments that belong to current subscription
-    // Either by subscriptionId (if backend sends it) or by scheduled date after subscription start
-    const belongsToCurrentSub = a.subscriptionId 
-      ? a.subscriptionId === subscription.id
-      : new Date(a.scheduledAt).getTime() >= subscriptionStart.getTime();
-    return belongsToCurrentSub;
-  }).length;
-}, [appointments, subscription]);
+    // If no active subscription, no credits available
+    if (!subscription?.startDate) return 0;
+
+    const subscriptionStart = new Date(subscription.startDate);
+
+    return appointments.filter((a) => {
+      if (a.status === "CANCELLED") return false;
+      // Only count appointments that belong to current subscription
+      // Either by subscriptionId (if backend sends it) or by scheduled date after subscription start
+      const belongsToCurrentSub = a.subscriptionId
+        ? a.subscriptionId === subscription.id
+        : new Date(a.scheduledAt).getTime() >= subscriptionStart.getTime();
+      return belongsToCurrentSub;
+    }).length;
+  }, [appointments, subscription]);
 
   const remainingCredits = Math.max(0, consultationsPerMonth - usedThisMonth);
   const unlimited = consultationsPerMonth >= 999;
@@ -104,20 +94,20 @@ const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscript
     <div className="space-y-6">
       {/* Stats cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-  {stats.map((s) => (
-    <Card key={s.label}>
-      <CardContent className="flex items-center gap-2 p-3 md:gap-3 md:p-4">
-        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.color} md:h-10 md:w-10`}>
-          {s.icon}
-        </div>
-        <div>
-          <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground md:text-xs">{s.label}</div>
-          <div className="font-syne text-base font-bold md:text-xl">{s.value}</div>
-        </div>
-      </CardContent>
-    </Card>
-  ))}
-</div>
+        {stats.map((s) => (
+          <Card key={s.label}>
+            <CardContent className="flex items-center gap-2 p-3 md:gap-3 md:p-4">
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${s.color} md:h-10 md:w-10`}>
+                {s.icon}
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground md:text-xs">{s.label}</div>
+                <div className="font-syne text-base font-bold md:text-xl">{s.value}</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Tabs */}
       <Card>
@@ -147,7 +137,6 @@ const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscript
               <AppointmentCard
                 key={a.id}
                 appt={a}
-                nutritionistUserIdMap={nutritionistUserIdMap}
                 onMessage={(userId, name) => navigate("/patient/messages", {
                   state: {
                     openConversationWith: userId,
@@ -182,7 +171,6 @@ const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscript
               <AppointmentCard
                 key={a.id}
                 appt={a}
-                nutritionistUserIdMap={nutritionistUserIdMap}
                 onMessage={(userId, name) => navigate("/patient/messages", {
                   state: {
                     openConversationWith: userId,
@@ -232,11 +220,10 @@ function EmptyMessage({ msg, cta, onCta }: { msg: string; cta?: string; onCta?: 
 }
 
 // Appointment card — FIXED to properly resolve nutritionist userId
-function AppointmentCard({ appt, onCancel, onMessage, nutritionistUserIdMap }: {
+function AppointmentCard({ appt, onCancel, onMessage }: {
   appt: Appointment;
   onCancel?: () => Promise<void>;
   onMessage?: (userId: number, name: string) => void;
-  nutritionistUserIdMap: Map<number, number>;
 }) {
   const navigate = useNavigate();
   const nutri = typeof appt.nutritionist === "object" ? appt.nutritionist : null;
@@ -400,11 +387,10 @@ function BookingFlow({
                   <div key={n.id} className="space-y-2">
                     <button
                       onClick={() => setSelectedNutri(n.id)}
-                      className={`w-full rounded-md border p-3 text-left transition-colors ${
-                        selectedNutri === n.id
+                      className={`w-full rounded-md border p-3 text-left transition-colors ${selectedNutri === n.id
                           ? "border-[hsl(var(--green))] bg-[hsl(var(--green-light)/0.4)]"
                           : "border-border hover:bg-muted/50"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))] font-semibold">
@@ -475,11 +461,10 @@ function BookingFlow({
                     <button
                       key={s.id}
                       onClick={() => setSelectedSlot(s.id)}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
-                        selectedSlot === s.id
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${selectedSlot === s.id
                           ? "border-[hsl(var(--green))] bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))]"
                           : "border-border bg-card hover:border-[hsl(var(--green))] hover:bg-[hsl(var(--green-light)/0.3)]"
-                      }`}
+                        }`}
                     >
                       {s.startTime}–{s.endTime}
                     </button>
