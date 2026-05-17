@@ -846,8 +846,8 @@ function MeasurementsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+<DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
+          <DialogHeader>
           <DialogTitle>Update Measurements</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">

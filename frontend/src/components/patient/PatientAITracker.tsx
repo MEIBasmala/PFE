@@ -309,7 +309,7 @@ export default function PatientAITracker() {
         if (!open) resetModal();
         setScanModalOpen(open);
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ScanLine className="h-5 w-5 text-primary" />
@@ -517,7 +517,7 @@ function ManualEntryModal({ open, onOpenChange, onSubmit, date }: ManualEntryMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manual Entry</DialogTitle>
         </DialogHeader>

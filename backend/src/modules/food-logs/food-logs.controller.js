@@ -59,5 +59,17 @@ const createFoodLog = async (req, res) => {
   }
 };
 
-// Also export it
-module.exports = { getMyFoodLogs, getFoodLogById, uploadMealImage, deleteFoodLog, getDailyAiUsage , createFoodLog};
+const getMyFoodLogsForWeek = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'startDate and endDate are required' });
+    }
+    const logs = await foodLogsService.getMyFoodLogsForWeek(req.user.id, startDate, endDate);
+    res.status(200).json({ success: true, logs });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { getMyFoodLogs, getFoodLogById, getMyFoodLogsForWeek, uploadMealImage, deleteFoodLog, getDailyAiUsage, createFoodLog };

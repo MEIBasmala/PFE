@@ -24,6 +24,7 @@ export interface User {
   updatedAt: ISODateString;
   avatarUrl?: string;
   phone?: string;
+  mustChangePassword?: boolean;
 }
 
 export type AuthUser = User;
@@ -173,7 +174,7 @@ export interface Appointment {
   nutritionist: {
     id: number;
     fullName: string;
-    userId?: number; 
+    userId: number; 
   };
 }
 

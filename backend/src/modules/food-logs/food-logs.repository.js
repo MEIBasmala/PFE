@@ -53,13 +53,28 @@ const countTodayAiScans = async (patientId) => {
   });
 };
 
+const getFoodLogsForWeek = async (patientId, startDate, endDate) => {
+  const start = new Date(`${startDate}T00:00:00.000Z`);
+  const end = new Date(`${endDate}T23:59:59.999Z`);
+
+  return await prisma.foodLog.findMany({
+    where: {
+      patientId,
+      estimatedAt: { gte: start, lte: end },
+    },
+    include: { aiEstimation: true },
+    orderBy: { estimatedAt: 'desc' },
+  });
+};
 
 module.exports = {
   getFoodLogs,
+  getFoodLogsForWeek,
   getFoodLogById,
   createFoodLog,
   createAIEstimation,
   deleteFoodLog,
   getPatientByUserId,
-  countTodayAiScans
+  countTodayAiScans,
+
 };

@@ -127,9 +127,16 @@ const createFoodLog = async (userId, data) => {
   return await foodLogsRepo.getFoodLogById(foodLog.id);
 };
 
+const getMyFoodLogsForWeek = async (userId, startDate, endDate) => {
+  const patient = await foodLogsRepo.getPatientByUserId(userId);
+  if (!patient) throw new Error('Patient profile not found');
+  return await foodLogsRepo.getFoodLogsForWeek(patient.id, startDate, endDate);
+};
+
 module.exports = {
   getMyFoodLogs,
   getFoodLogById,
+  getMyFoodLogsForWeek,
   uploadMealImage,
   deleteFoodLog,
   getDailyAiUsage,

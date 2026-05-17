@@ -1,7 +1,7 @@
 // src/contexts/DiaryContext.tsx
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { getMyFoodLogs, createFoodLog, deleteFoodLog, uploadFoodLogImage } from '@/services/api';
-import type { UIFoodLog , MealCategory} from '@/types/api';
+import { getMyFoodLogs, getMyFoodLogsForWeek, createFoodLog, deleteFoodLog, uploadFoodLogImage } from '@/services/api';
+import type { UIFoodLog, MealCategory } from '@/types/api';
 import { toIsoDate } from '@/lib/date';
 import { toast } from 'sonner';
 
@@ -79,16 +79,42 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
     setWeekLoading(true);
     try {
       const days = getWeekDates(isoDate);
-      // fetch all 7 days in parallel
+      const startDate = days[0];
+      const endDate = days[6];
+
+      // Try batch endpoint first (1 call instead of 7)
+      const response = await getMyFoodLogsForWeek(startDate, endDate);
+      
+      // Handle both { success, logs } and direct array responses
+      const responseData = response as { success?: boolean; logs?: UIFoodLog[] };
+      const allLogs: UIFoodLog[] = responseData.logs ?? (Array.isArray(response) ? response : []) ?? [];
+
+      // Group by date — use any cast since backend sends estimatedAt but frontend type may call it loggedAt
+      const logsByDate = new Map<string, UIFoodLog[]>();
+      for (const log of allLogs) {
+        const rawDate = (log as any).estimatedAt ?? (log as any).loggedAt ?? new Date();
+        const dateKey = toIsoDate(new Date(rawDate));
+        if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, []);
+        logsByDate.get(dateKey)!.push(log);
+      }
+
+      setWeekData(
+        days.map((d) => ({
+          date: d,
+          calories: (logsByDate.get(d) || []).reduce((sum, log) => sum + (log.calories ?? 0), 0),
+        }))
+      );
+    } catch (error) {
+      console.error('Batch week fetch failed, falling back to parallel:', error);
+      // Fallback to original 7-call approach
+      const days = getWeekDates(isoDate);
       const results = await Promise.all(days.map(d => getMyFoodLogs(d)));
       setWeekData(
         days.map((d, i) => ({
           date: d,
-          calories: results[i].reduce((sum, log) => sum + log.calories, 0),
+          calories: results[i].reduce((sum, log) => sum + (log.calories ?? 0), 0),
         }))
       );
-    } catch (error) {
-      console.error('Failed to fetch week data', error);
     } finally {
       setWeekLoading(false);
     }
@@ -137,8 +163,8 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const uploadImage = async (file: File, category?: MealCategory): Promise<boolean> => {
-  try {
-    await uploadFoodLogImage(file, category);
+    try {
+      await uploadFoodLogImage(file, category);
       await Promise.all([fetchLogs(date), fetchWeek(date)]);
       return true;
     } catch (error) {

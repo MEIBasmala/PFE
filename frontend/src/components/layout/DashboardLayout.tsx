@@ -64,8 +64,10 @@ const DashboardLayout = ({
         onClick={() => setSidebarOpen(false)}
       />
 
-      <aside className={`kl-sidebar ${sidebarOpen ? "mobile-open" : ""}`}>
-        <Link to="/" className="sb-logo group no-underline">
+      <aside
+        className={`kl-sidebar ${sidebarOpen ? "mobile-open" : ""}`}
+        style={{ zIndex: sidebarOpen ? 1001 : undefined }}
+      >        <Link to="/" className="sb-logo group no-underline">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-kl-green to-kl-orange flex items-center justify-center transition-transform group-hover:rotate-[8deg]">
             <img src="../img/logo.png" alt="KhabirLens" className="w-full h-full object-contain p-0.5" />
           </div>
@@ -131,7 +133,7 @@ const DashboardLayout = ({
                 const profilePath =
                   role === "PATIENT" ? "/patient/profile" :
                     role === "NUTRITIONIST" ? "/nutritionist/profile" :
-                        "/profile";
+                      "/profile";
                 navigate(profilePath);
               }}
             >

@@ -115,3 +115,10 @@ export const updateFoodLog = async (
 
 export const deleteFoodLog = (id: string) =>
   api.delete<{ ok: true }>(`/food-logs/${id}`);
+
+export const getMyFoodLogsForWeek = async (startDate: string, endDate: string) => {
+  const response = await api.get<{ success: boolean; logs: UIFoodLog[] }>(
+    `/food-logs/week?startDate=${startDate}&endDate=${endDate}`
+  );
+  return response;
+};

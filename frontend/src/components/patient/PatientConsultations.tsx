@@ -190,6 +190,7 @@ const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscript
           planLabel={packageInfo?.name ?? "Free"}
           remainingCredits={remainingCredits}
           unlimited={unlimited}
+          consultationsPerMonth={consultationsPerMonth}
           onBooked={async () => {
             setTab("upcoming");
             await Promise.all([appts.refetch(), refreshSubscription()]);
@@ -290,6 +291,7 @@ function BookingFlow({
   planLabel,
   remainingCredits,
   unlimited,
+  consultationsPerMonth,
   onBooked,
   onMessageNutritionist,
 }: {
@@ -297,6 +299,7 @@ function BookingFlow({
   planLabel: string;
   remainingCredits: number;
   unlimited: boolean;
+  consultationsPerMonth: number;
   onBooked: () => Promise<void> | void;
   onMessageNutritionist: (nutritionistUserId: number) => void;
 }) {
@@ -328,12 +331,40 @@ function BookingFlow({
 
   const noCredits = !unlimited && remainingCredits <= 0;
 
+  /* ─── FREE TIER: No consultations allowed ─── */
+  const isFreeTier = consultationsPerMonth === 0 && !unlimited;
+  if (isFreeTier) {
+    const navigate = useNavigate();
+    return (
+      <Card className="border-2 border-[hsl(var(--orange))]/30">
+        <CardContent className="p-6 text-center space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--orange-20))] text-[hsl(var(--orange))]">
+            <Star className="h-6 w-6" />
+          </div>
+          <h3 className="font-semibold">Consultations require a paid plan</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            The free plan does not include nutritionist consultations. Upgrade to a paid plan to book sessions with certified nutritionists.
+          </p>
+          <Button 
+            onClick={() => navigate('/patient/subscription')} 
+            className="mt-2"
+          >
+            View Plans & Upgrade
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+  /* ─────────────────────────────────────────── */
+
   const submit = async () => {
     if (!selectedNutri || !selectedSlot) return;
     if (noCredits) {
       toast.error("You've used all your monthly consultations. Upgrade your plan to book more.");
       return;
     }
+
+    
     setSubmitting(true);
     try {
       await bookAppointment({
@@ -350,21 +381,22 @@ function BookingFlow({
     }
   };
 
+  
+
   const availableSlots = (slots.data ?? []).filter((s) => !s.isBooked);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
-        {noCredits && (
+         {noCredits && !isFreeTier && (
           <Card className="border-2 border-destructive/30">
             <CardContent className="p-4">
               <p className="text-sm">
-                ⚠️ You've used all <strong>{plan}</strong> plan consultations this month. Upgrade to book more.
+                ⚠️ You've used all <strong>{planLabel}</strong> plan consultations this month. Upgrade to book more.
               </p>
             </CardContent>
           </Card>
         )}
-
         {/* Step 1 — Choose nutritionist */}
         <Card>
           <CardHeader>

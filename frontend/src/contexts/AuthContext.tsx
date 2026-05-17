@@ -26,6 +26,7 @@ interface AuthContextType {
   register: (fullName: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
+  refreshUser: () => Promise<void>;   // ← ADDED
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,26 +35,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ── Reusable profile fetcher ───────────────────────────────────────────────
+  const refreshUser = async (): Promise<void> => {
+    if (!checkAuth()) return;
+    try {
+      const res = await authApi.getProfile(); // GET /auth/me
+      const freshUser = (res as any).user ?? res;
+      setUser(freshUser as User);
+      saveUser(freshUser);
+    } catch {
+      // Token invalid — clear silently
+      setUser(null);
+      removeUser();
+      removeToken();
+    }
+  };
+
   useEffect(() => {
-    // Restore user from localStorage on mount.
-    // Also verify the token is still valid by calling /auth/me.
-    // If it fails (expired, tampered), clear everything silently.
     const restore = async () => {
       const saved = getUser<User>();
       if (saved && checkAuth()) {
-        setUser(saved); // optimistically set so UI doesn't flash
-        try {
-          const res = await authApi.getProfile(); // GET /auth/me
-          // Backend returns { success: true, user: {...} }
-          const freshUser = (res as any).user ?? res;
-          setUser(freshUser as User);
-          saveUser(freshUser);
-        } catch {
-          // Token is invalid/expired and refresh also failed — clear everything
-          setUser(null);
-          removeUser();
-          removeToken();
-        }
+        setUser(saved); // optimistic
+        await refreshUser(); // verify + refresh
       }
       setLoading(false);
     };
@@ -82,12 +85,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async (): Promise<void> => {
-    // Clear local state first so UI updates immediately
     setUser(null);
     removeUser();
     removeToken();
-    // Then tell the server to clear the httpOnly refresh token cookie.
-    // clientLogout(false) = don't redirect — we handle navigation ourselves.
     await clientLogout(false);
     window.location.href = '/auth';
   };
@@ -107,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         logout,
         updateUser,
+        refreshUser,   // ← ADDED
       }}
     >
       {children}
