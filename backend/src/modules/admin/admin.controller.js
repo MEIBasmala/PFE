@@ -1,14 +1,18 @@
 const adminService = require('./admin.service');
 const {
   CSV_EXPORT,
-  PAYMENT_STATUS,
-  BLOG_STATUS,
 } = require('./admin.config');
 
 const getAllPatients = async (req, res) => {
   try {
-    const patients = await adminService.getAllPatients();
-    res.status(200).json({ success: true, patients });
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
+    const { patients, total } = await adminService.getAllPatients(page, limit);
+    res.status(200).json({ 
+      success: true, 
+      patients,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+    });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -16,8 +20,14 @@ const getAllPatients = async (req, res) => {
 
 const getAllNutritionists = async (req, res) => {
   try {
-    const nutritionists = await adminService.getAllNutritionists();
-    res.status(200).json({ success: true, nutritionists });
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
+    const { nutritionists, total } = await adminService.getAllNutritionists(page, limit);
+    res.status(200).json({ 
+      success: true, 
+      nutritionists,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+    });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -93,8 +103,14 @@ const getAuditLogs = async (req, res) => {
 
 const getAllSubscriptions = async (req, res) => {
   try {
-    const subscriptions = await adminService.getAllSubscriptions();
-    res.status(200).json({ success: true, subscriptions });
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
+    const { subscriptions, total } = await adminService.getAllSubscriptions(page, limit);
+    res.status(200).json({ 
+      success: true, 
+      subscriptions,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+    });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -102,8 +118,14 @@ const getAllSubscriptions = async (req, res) => {
 
 const getAllPayments = async (req, res) => {
   try {
-    const payments = await adminService.getAllPayments();
-    res.status(200).json({ success: true, payments });
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
+    const { payments, total } = await adminService.getAllPayments(page, limit);
+    res.status(200).json({ 
+      success: true, 
+      payments,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+    });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

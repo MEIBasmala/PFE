@@ -52,7 +52,7 @@ export default function PatientConsultations() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("upcoming");
   const appts = useAsync(() => getMyAppointments(), [], { toastOnError: false });
-const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscription } = useSubscription();
+  const { plan, packageInfo, consultationsPerMonth, subscription, refreshSubscription } = useSubscription();
 
   const appointments = Array.isArray(appts.data) ? appts.data : [];
   const now = Date.now();
@@ -303,6 +303,7 @@ function BookingFlow({
   onBooked: () => Promise<void> | void;
   onMessageNutritionist: (nutritionistUserId: number) => void;
 }) {
+  const navigate = useNavigate();
   const nutritionists = useAsync(() => getNutritionists(), [], { toastOnError: false });
   const [selectedNutri, setSelectedNutri] = useState<number | null>(null);
   const [date, setDate] = useState<string>(toIsoDate(new Date()));
@@ -334,7 +335,6 @@ function BookingFlow({
   /* ─── FREE TIER: No consultations allowed ─── */
   const isFreeTier = consultationsPerMonth === 0 && !unlimited;
   if (isFreeTier) {
-    const navigate = useNavigate();
     return (
       <Card className="border-2 border-[hsl(var(--orange))]/30">
         <CardContent className="p-6 text-center space-y-3">
@@ -345,8 +345,8 @@ function BookingFlow({
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
             The free plan does not include nutritionist consultations. Upgrade to a paid plan to book sessions with certified nutritionists.
           </p>
-          <Button 
-            onClick={() => navigate('/patient/subscription')} 
+          <Button
+            onClick={() => navigate('/patient/subscription')}
             className="mt-2"
           >
             View Plans & Upgrade
@@ -364,7 +364,7 @@ function BookingFlow({
       return;
     }
 
-    
+
     setSubmitting(true);
     try {
       await bookAppointment({
@@ -381,14 +381,14 @@ function BookingFlow({
     }
   };
 
-  
+
 
   const availableSlots = (slots.data ?? []).filter((s) => !s.isBooked);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
-         {noCredits && !isFreeTier && (
+        {noCredits && !isFreeTier && (
           <Card className="border-2 border-destructive/30">
             <CardContent className="p-4">
               <p className="text-sm">
@@ -420,8 +420,8 @@ function BookingFlow({
                     <button
                       onClick={() => setSelectedNutri(n.id)}
                       className={`w-full rounded-md border p-3 text-left transition-colors ${selectedNutri === n.id
-                          ? "border-[hsl(var(--green))] bg-[hsl(var(--green-light)/0.4)]"
-                          : "border-border hover:bg-muted/50"
+                        ? "border-[hsl(var(--green))] bg-[hsl(var(--green-light)/0.4)]"
+                        : "border-border hover:bg-muted/50"
                         }`}
                     >
                       <div className="flex items-center gap-3">
@@ -494,8 +494,8 @@ function BookingFlow({
                       key={s.id}
                       onClick={() => setSelectedSlot(s.id)}
                       className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${selectedSlot === s.id
-                          ? "border-[hsl(var(--green))] bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))]"
-                          : "border-border bg-card hover:border-[hsl(var(--green))] hover:bg-[hsl(var(--green-light)/0.3)]"
+                        ? "border-[hsl(var(--green))] bg-[hsl(var(--green-light))] text-[hsl(var(--green-dark))]"
+                        : "border-border bg-card hover:border-[hsl(var(--green))] hover:bg-[hsl(var(--green-light)/0.3)]"
                         }`}
                     >
                       {s.startTime}–{s.endTime}

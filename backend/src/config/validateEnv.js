@@ -91,7 +91,7 @@ function validateEnv() {
     );
   }
 
-  console.log('✅  Environment variables validated.\n');
+  console.log('Environment variables validated.\n');
 }
 
 module.exports = validateEnv;

@@ -3,7 +3,7 @@ const sendEmail = require('../../config/email');
 const { createNotification } = require('../notifications/notifications.service');
 const prisma = require('../../config/db');
 const usersRepo = require('../users/users.repository');
-const subsRepo =  require('../subscriptions/subscriptions.repository');
+const subsRepo = require('../subscriptions/subscriptions.repository');
 
 
 // Helper to get patient appointments
@@ -53,81 +53,88 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
   }
   // ── END SUBSCRIPTION CHECK ─────────────────────────────────────
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Lock and fetch the slot row
-    const slot = await tx.availableSlot.findUnique({
-      where: { id: slotIdInt },
-    });
-    if (!slot) throw new Error('Slot not found');
-    if (slot.isBooked) throw new Error('Slot is already booked');
+    try {
+    return await prisma.$transaction(async (tx) => {
+      // 1. Lock and fetch the slot row
+      const slot = await tx.availableSlot.findUnique({
+        where: { id: slotIdInt },
+      });
+      if (!slot) throw new Error('Slot not found');
+      if (slot.isBooked) throw new Error('Slot is already booked');
 
-    // 2. Verify the slot belongs to the requested nutritionist
-    if (slot.nutritionistId !== nutritionistIdInt) {
-      throw new Error('Slot does not belong to that nutritionist');
-    }
-
-    // 3. Prevent booking slots in the past
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    if (new Date(slot.date) < now) {
-      throw new Error('Cannot book a slot in the past');
-    }
-
-    // 4. Create the appointment WITH subscriptionId
-    const jitsiLink = `https://meet.jit.si/KhabirLens-${Date.now()}`;
-    const appointment = await tx.appointment.create({
-      data: {
-        patientId: patient.id,
-        nutritionistId: nutritionistIdInt,
-        slotId: slotIdInt,
-        status: 'PENDING',
-        jitsiLink,
-        subscriptionId: activeSub.id, 
-      },
-      include: {
-        nutritionist: { include: { user: true } },
-        slot: true,
-      },
-    });
-
-    // 5. Mark the slot as booked
-    await tx.availableSlot.update({
-      where: { id: slotIdInt },
-      data: { isBooked: true },
-    });
-
-    // 6. After transaction commit, send notifications & email
-    setImmediate(async () => {
-      try {
-        const nutritionistUserId = appointment.nutritionist.user.id;
-        const patientUser = await usersRepo.findById(userId);
-        await createNotification(
-          nutritionistUserId,
-          'APPOINTMENT',
-          `New appointment request from ${patientUser.fullName} on ${slot.date.toLocaleDateString()} at ${slot.startTime}`
-        );
-      } catch (e) {
-        console.error('[Appointment] Notification error:', e.message);
+      // 2. Verify the slot belongs to the requested nutritionist
+      if (slot.nutritionistId !== nutritionistIdInt) {
+        throw new Error('Slot does not belong to that nutritionist');
       }
 
-      try {
-        const patientUser = await usersRepo.findById(userId);
-        await sendEmail({
-          to: patientUser.email,
-          subject: 'KhabirLens — Appointment Booked 📅',
-          html: `<h2>Appointment Booked!</h2>
-                 <p>Your appointment has been booked successfully.</p>
-                 <p>Date: ${slot.date.toLocaleDateString()}</p>
-                 <p>Time: ${slot.startTime} - ${slot.endTime}</p>
-                 <p>Jitsi Link: <a href="${jitsiLink}">${jitsiLink}</a></p>`,
-        });
-      } catch (e) {
-        console.error('[Appointment] Email error:', e.message);
+      // 3. Prevent booking slots in the past
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      if (new Date(slot.date) < now) {
+        throw new Error('Cannot book a slot in the past');
       }
-    });
 
-    return appointment;
-  });
+      // 4. Create the appointment WITH subscriptionId
+      const jitsiLink = `https://meet.jit.si/KhabirLens-${Date.now()}`;
+      const appointment = await tx.appointment.create({
+        data: {
+          patientId: patient.id,
+          nutritionistId: nutritionistIdInt,
+          slotId: slotIdInt,
+          status: 'PENDING',
+          jitsiLink,
+          subscriptionId: activeSub.id, 
+        },
+        include: {
+          nutritionist: { include: { user: true } },
+          slot: true,
+        },
+      });
+
+      // 5. Mark the slot as booked
+      await tx.availableSlot.update({
+        where: { id: slotIdInt },
+        data: { isBooked: true },
+      });
+
+      // 6. After transaction commit, send notifications & email
+      setImmediate(async () => {
+        try {
+          const nutritionistUserId = appointment.nutritionist.user.id;
+          const patientUser = await usersRepo.findById(userId);
+          await createNotification(
+            nutritionistUserId,
+            'APPOINTMENT',
+            `New appointment request from ${patientUser.fullName} on ${slot.date.toLocaleDateString()} at ${slot.startTime}`
+          );
+        } catch (e) {
+          console.error('[Appointment] Notification error:', e.message);
+        }
+
+        try {
+          const patientUser = await usersRepo.findById(userId);
+          await sendEmail({
+            to: patientUser.email,
+            subject: 'KhabirLens — Appointment Booked 📅',
+            html: `<h2>Appointment Booked!</h2>
+                   <p>Your appointment has been booked successfully.</p>
+                   <p>Date: ${slot.date.toLocaleDateString()}</p>
+                   <p>Time: ${slot.startTime} - ${slot.endTime}</p>
+                   <p>Jitsi Link: <a href="${jitsiLink}">${jitsiLink}</a></p>`,
+          });
+        } catch (e) {
+          console.error('[Appointment] Email error:', e.message);
+        }
+      });
+
+      return appointment;
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      throw new Error('Slot is already booked');
+    }
+    throw error;
+  }
 };
 
 // Confirm an appointment (nutritionist)

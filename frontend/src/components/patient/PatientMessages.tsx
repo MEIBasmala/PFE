@@ -64,12 +64,13 @@ export default function PatientMessages() {
   const appointments = appointmentsResult.data || [];
 
   // Helper: check if the patient has any confirmed/completed appointment with a given nutritionist (by userId)
-  const hasAppointmentWithNutritionist = useCallback(
+   const hasAppointmentWithNutritionist = useCallback(
     (nutritionistUserId: number) => {
+      const targetId = Number(nutritionistUserId);
       return appointments.some((appt: Appointment) => {
-        const nutriUserId = (appt.nutritionist as any)?.userId;
+        const nutriUserId = Number((appt.nutritionist as any)?.userId);
         return (
-          nutriUserId === nutritionistUserId &&
+          nutriUserId === targetId &&
           (appt.status === "CONFIRMED" || appt.status === "COMPLETED")
         );
       });
@@ -299,9 +300,9 @@ export default function PatientMessages() {
   };
 
 
-  const conversationsWithPending = useMemo(() => {
+   const conversationsWithPending = useMemo(() => {
   if (activeId == null) return conversations;
-  if (conversations.some((c) => Number(c.id) === activeId)) return conversations;
+  if (conversations.some((c) => Number(c.id) === Number(activeId))) return conversations;
   // We don't have the name yet — show a placeholder
   return [
     {

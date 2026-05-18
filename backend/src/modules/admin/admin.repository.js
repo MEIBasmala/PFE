@@ -1,8 +1,11 @@
 const prisma = require('../../config/db');
 const { PAGINATION, SUBSCRIPTION_STATUS, PAYMENT_STATUS, ROLES } = require('./admin.config');
 
-const getAllPatients = async () => {
+const getAllPatients = async (page = 1, limit = PAGINATION.DEFAULT_LIMIT) => {
+  const skip = (page - 1) * limit;
   return await prisma.patient.findMany({
+    skip,
+    take: limit,
     include: {
       user: {
         select: {
@@ -18,8 +21,11 @@ const getAllPatients = async () => {
   });
 };
 
-const getAllNutritionists = async () => {
+const getAllNutritionists = async (page = 1, limit = PAGINATION.DEFAULT_LIMIT) => {
+  const skip = (page - 1) * limit;
   return await prisma.nutritionist.findMany({
+    skip,
+    take: limit,
     include: {
       user: {
         select: {
@@ -34,6 +40,7 @@ const getAllNutritionists = async () => {
     orderBy: PAGINATION.DEFAULT_ORDER_BY,
   });
 };
+
 
 const toggleUserStatus = async (userId, isActive) => {
   return await prisma.user.update({
@@ -136,8 +143,11 @@ const getNutritionistById = async (id) => {
   });
 };
 
-const getAllPayments = async () => {
+const getAllPayments = async (page = 1, limit = PAGINATION.DEFAULT_LIMIT) => {
+  const skip = (page - 1) * limit;
   return await prisma.payment.findMany({
+    skip,
+    take: limit,
     include: {
       subscription: {
         include: {
@@ -154,8 +164,11 @@ const getAllPayments = async () => {
   });
 };
 
-const getAllSubscriptions = async () => {
+const getAllSubscriptions = async (page = 1, limit = PAGINATION.DEFAULT_LIMIT) => {
+  const skip = (page - 1) * limit;
   return await prisma.subscription.findMany({
+    skip,
+    take: limit,
     include: {
       patient: {
         include: {
@@ -173,6 +186,10 @@ const getAllPatientsCount = async () => await prisma.patient.count();
 const getAllNutritionistsCount = async () => await prisma.nutritionist.count();
 const getActiveSubscriptionsCount = async () =>
   await prisma.subscription.count({ where: { status: SUBSCRIPTION_STATUS.ACTIVE } });
+const getAllPaymentsCount = async () => await prisma.payment.count();
+const getAllSubscriptionsCount = async () => await prisma.subscription.count();
+
+
 const getTotalRevenue = async () => {
   const result = await prisma.payment.aggregate({
     where: { status: PAYMENT_STATUS.SUCCESS },
@@ -234,8 +251,11 @@ const getRecentPayments = async (limit = PAGINATION.RECENT_PAYMENTS_LIMIT) => {
 };
 
 // BLOG MANAGEMENT
-const getAllBlogArticles = async () => {
+const getAllBlogArticles = async (page = 1, limit = PAGINATION.DEFAULT_LIMIT) => {
+  const skip = (page - 1) * limit;
   return await prisma.blogArticle.findMany({
+    skip,
+    take: limit,
     include: {
       admin: { include: { user: { select: { id: true, fullName: true } } } },
       comments: {
@@ -289,6 +309,8 @@ module.exports = {
   getAllPatientsCount,
   getAllNutritionistsCount,
   getActiveSubscriptionsCount,
+  getAllPaymentsCount,
+  getAllSubscriptionsCount,
   getTotalRevenue,
   getTotalRevenueForPeriod,
   getNewUsersCount,

@@ -3,11 +3,18 @@ const prisma = require('../../config/db');
 // Get all available (free) slots with nutritionist info
 const getAllSlots = async () => {
   return await prisma.availableSlot.findMany({
-    where: { isBooked: false },
+    where: {
+      isBooked: false,
+      nutritionist: {
+        user: {
+          isActive: true,
+        },
+      },
+    },
     include: {
       nutritionist: {
         include: {
-          user: { select: { id: true, fullName: true, email: true } },
+          user: { select: { id: true, fullName: true, email: true, isActive: true } },
         },
       },
     },
@@ -64,6 +71,11 @@ const getSlotsByNutritionistAndDate = async (nutritionistId, date) => {
       nutritionistId,
       date: { gte: targetDate, lt: nextDay },
       isBooked: false,
+      nutritionist: {
+        user: {
+          isActive: true,
+        },
+      },
     },
     orderBy: { startTime: 'asc' },
   });

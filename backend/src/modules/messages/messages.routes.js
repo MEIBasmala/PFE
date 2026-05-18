@@ -6,9 +6,14 @@ const { validateSendMessage } = require("./messages.validation");
 const { protect } = require("../../middleware/auth");
 
 const multer = require("multer");
-const path = require("path");
-const { v4: uuidv4 } = require("uuid");
-const fs = require("fs");
+const cloudinary = require("cloudinary").v2;
+
+// ── Cloudinary config ────────────────────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // ── Allowed MIME types ───────────────────────────────────────────────────────
 const ALLOWED_IMAGE_TYPES = [
@@ -29,17 +34,8 @@ const ALLOWED_FILE_TYPES = [
   "text/csv",
 ];
 
-// ── Multer storage ───────────────────────────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    const dir = "uploads/messages/";
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (_req, file, cb) => {
-    cb(null, `${uuidv4()}${path.extname(file.originalname)}`);
-  },
-});
+// ── Multer memory storage (file lives in RAM, uploaded to Cloudinary) ─────
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -53,22 +49,39 @@ const upload = multer({
   },
 });
 
+// ── Helper: upload buffer to Cloudinary ─────────────────────────────────────
+const uploadToCloudinary = (buffer, mimetype) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "khabirlens/messages",
+        resource_type: "auto",
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+};
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 
-// POST /messages/upload  — image OR file attachment
-router.post("/upload", protect, upload.single("image"), (req, res) => {
+// POST /messages/upload — image OR file attachment → Cloudinary
+router.post("/upload", protect, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
       return res
         .status(400)
         .json({ success: false, message: "No file uploaded" });
     }
-    const baseUrl =
-      process.env.API_URL || `${req.protocol}://${req.get("host")}`;
-    const imageUrl = `${baseUrl}/uploads/messages/${req.file.filename}`;
-    res.status(200).json({ success: true, imageUrl });
+
+    const result = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    res.status(200).json({ success: true, imageUrl: result.secure_url });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Cloudinary upload error:", error);
+    res.status(500).json({ success: false, message: "Failed to upload image" });
   }
 });
 

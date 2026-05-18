@@ -6,6 +6,8 @@ import { DashboardLayout } from "@/components/layout";
 import { PATIENT_NAV } from "@/config/patientNav";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { DiaryProvider } from "@/contexts/DiaryContext";
+import { prefetchDashboardData } from "@/lib/prefetch";
+
 import "../styles/patient.css";
 
 const PatientHome = lazy(() => import("@/components/patient/PatientHome"));
@@ -56,6 +58,10 @@ export default function PatientDashboard() {
     if (loading) return;
     if (!user || user.role !== "PATIENT") navigate("/auth");
   }, [user, loading, navigate]);
+
+    useEffect(() => {
+    prefetchDashboardData();
+  }, []);
 
   if (loading || !user) {
     return (

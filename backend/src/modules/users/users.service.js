@@ -85,15 +85,16 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
   if (!isMatch) throw new Error('Current password is incorrect');
 
 
-  const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, 10);
 
-
-  await usersRepo.updateUser(userId, { password: hashed });
+  await usersRepo.updateUser(userId, { 
+    password: hashed,
+    mustChangePassword: false,  
+  });
 
   return { message: 'Password changed successfully' };
+
 };
-
-
 const getUserById = async (targetUserId, requestingUserId, requestingRole) => {
   // 1) Fetch target user (safe fields only, no password)
   const targetUser = await prisma.user.findUnique({

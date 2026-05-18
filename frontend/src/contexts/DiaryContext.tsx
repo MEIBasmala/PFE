@@ -104,17 +104,11 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
           calories: (logsByDate.get(d) || []).reduce((sum, log) => sum + (log.calories ?? 0), 0),
         }))
       );
-    } catch (error) {
-      console.error('Batch week fetch failed, falling back to parallel:', error);
-      // Fallback to original 7-call approach
+        } catch (error) {
+      console.error('Batch week fetch failed:', error);
+      // Graceful fallback: show zeroed bars instead of firing 7 parallel calls
       const days = getWeekDates(isoDate);
-      const results = await Promise.all(days.map(d => getMyFoodLogs(d)));
-      setWeekData(
-        days.map((d, i) => ({
-          date: d,
-          calories: results[i].reduce((sum, log) => sum + (log.calories ?? 0), 0),
-        }))
-      );
+      setWeekData(days.map((d) => ({ date: d, calories: 0 })));
     } finally {
       setWeekLoading(false);
     }

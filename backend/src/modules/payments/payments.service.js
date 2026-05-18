@@ -174,7 +174,14 @@ const handlePaymentFailed = async (paymentIntent) => {
 const getPaymentHistory = async (userId) => {
   const patient = await paymentsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Patient profile not found');
-  return await paymentsRepo.getPatientPayments(patient.id);
+  const payments = await paymentsRepo.getPatientPayments(patient.id);
+
+  // Convert amounts from USD cents (Stripe) back to DZD for patient display
+  const USD_RATE = 135;
+  return payments.map((p) => ({
+    ...p,
+    amount: Math.round((p.amount * USD_RATE) / 100),
+  }));
 };
 
 module.exports = {

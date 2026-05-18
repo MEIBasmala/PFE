@@ -87,9 +87,9 @@ export async function apiFetch<T>(
   let response = await makeRequest(getToken());
 
   // ── 401 handling: attempt one silent refresh ─────────────
-  if (
+    if (
     response.status === 401 &&
-    !endpoint.startsWith('/auth/') // don't try to refresh auth calls themselves
+    !endpoint.startsWith('/auth/')
   ) {
     if (!isRefreshing) {
       isRefreshing = true;
@@ -97,18 +97,21 @@ export async function apiFetch<T>(
         const newToken = await refreshAccessToken();
         notifyRefreshSubscribers(newToken);
       } catch {
-        // Refresh failed — session is truly dead
-        await logout(false); // Clear state without redirecting
-        throw new Error('Session expired. Please log in again.');
-      } finally {
+        // Refresh failed — clear flag and logout
         isRefreshing = false;
+        await logout(false);
+        throw new Error('Session expired. Please log in again.');
       }
+      // On success: isRefreshing stays true until after subscribers retry
     }
 
-    // If another request triggered the refresh first, wait for it
+    // Wait for the refresh to complete (either ours or another request's)
     const retryToken = await new Promise<string>((resolve) => {
       subscribeToRefresh(resolve);
     });
+
+    // Now all subscribers have their token — safe to clear the flag
+    isRefreshing = false;
 
     response = await makeRequest(retryToken);
   }

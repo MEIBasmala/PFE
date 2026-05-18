@@ -231,14 +231,14 @@ export default function PatientHome() {
                 >
                   <CalendarPlus className="mr-1.5 h-3.5 w-3.5" /> Book session
                 </Button>
-                {upcoming && (
+                                {upcoming && (
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() =>
                       navigate("/patient/messages", {
                         state: {
-                          openConversationWith: upcoming.nutritionist?.id,
+                          openConversationWith: upcoming.nutritionist?.userId,
                         },
                       })
                     }

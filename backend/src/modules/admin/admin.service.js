@@ -16,9 +16,21 @@ const {
   PASSWORD,
 } = require('./admin.config');
 
-const getAllPatients = async () => await adminRepo.getAllPatients();
-const getAllNutritionists = async () => await adminRepo.getAllNutritionists();
+const getAllPatients = async (page, limit) => {
+  const [patients, total] = await Promise.all([
+    adminRepo.getAllPatients(page, limit),
+    adminRepo.getAllPatientsCount(),
+  ]);
+  return { patients, total };
+};
 
+const getAllNutritionists = async (page, limit) => {
+  const [nutritionists, total] = await Promise.all([
+    adminRepo.getAllNutritionists(page, limit),
+    adminRepo.getAllNutritionistsCount(),
+  ]);
+  return { nutritionists, total };
+};
 const getStatistics = async () => {
   const stats = await adminRepo.getStatistics();
   stats.totalRevenue = Math.round((stats.totalRevenue * CURRENCY.USD_RATE) / 100);
@@ -118,9 +130,12 @@ const deleteNutritionist = async (userId, nutritionistId) => {
   );
 };
 
-const getAllSubscriptions = async () => {
-  const subs = await adminRepo.getAllSubscriptions();
-  return subs.map((sub) => ({
+const getAllSubscriptions = async (page, limit) => {
+  const [subs, total] = await Promise.all([
+    adminRepo.getAllSubscriptions(page, limit),
+    adminRepo.getAllSubscriptionsCount(),
+  ]);
+  const formatted = subs.map((sub) => ({
     id: sub.id,
     user: {
       fullName: sub.patient.user.fullName,
@@ -132,11 +147,15 @@ const getAllSubscriptions = async () => {
     status: sub.status,
     amount: sub.package.isSeasonal ? sub.package.price : sub.package.priceMonthly,
   }));
+  return { subscriptions: formatted, total };
 };
 
-const getAllPayments = async () => {
-  const payments = await adminRepo.getAllPayments();
-  return payments.map((p) => ({
+const getAllPayments = async (page, limit) => {
+  const [payments, total] = await Promise.all([
+    adminRepo.getAllPayments(page, limit),
+    adminRepo.getAllPaymentsCount() ,
+  ]);
+  const formatted = payments.map((p) => ({
     id: p.id,
     subscriptionId: p.subscriptionId,
     amount: (p.amount * CURRENCY.USD_RATE) / 100,
@@ -145,6 +164,7 @@ const getAllPayments = async () => {
     userFullName: p.subscription?.patient?.user.fullName || 'Unknown',
     planName: p.subscription?.package?.name || '-',
   }));
+  return { payments: formatted, total };
 };
 
 const getAnalytics = async (period) => {

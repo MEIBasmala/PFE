@@ -33,6 +33,7 @@ const verifyRefreshToken = async (refreshToken) => {
     where: { refreshToken: hashedToken },
   });
   if (!user) throw new Error('Invalid or expired refresh token');
+  if (!user.isActive) throw new Error('Account is deactivated');
   return user;
 };
 

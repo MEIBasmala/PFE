@@ -26,23 +26,33 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const consultationsPerMonth = packageInfo?.consultationsPerMonth ?? 0;
   const aiScansPerDay = packageInfo?.aiScansPerDay ?? 0;
 
-  const refreshSubscription = async () => {
+    const refreshSubscription = async () => {
     setLoading(true);
     try {
       const [sub, pkgs, usage] = await Promise.all([
         getMySubscription().catch(() => null),
         getPackages().catch(() => []),
-        getDailyUsage().catch(() => ({ aiScansUsedToday: 0 })),
+        getDailyUsage().catch(() => null), // null on error
       ]);
       setSubscription(sub);
-      setAiScansUsedToday(usage?.aiScansUsedToday ?? 0);
+
+      // Resolve package info first (needed for safe fallback)
+      const packages = Array.isArray(pkgs) ? pkgs : [];
+      let currentPackage: Package | null = null;
       if (sub?.packageId) {
-        const found = (Array.isArray(pkgs) ? pkgs : []).find(p => p.id === sub.packageId);
-        setPackageInfo(found || null);
+        currentPackage = packages.find(p => p.id === sub.packageId) || null;
       } else {
-        // Free plan fallback: find the Starter package or null
-        const starter = (Array.isArray(pkgs) ? pkgs : []).find(p => p.name.toLowerCase() === 'starter');
-        setPackageInfo(starter || null);
+        currentPackage = packages.find(p => p.name.toLowerCase() === 'starter') || null;
+      }
+      setPackageInfo(currentPackage);
+
+      // Safe usage: if fetch failed, assume limit reached
+      const scansPerDay = currentPackage?.aiScansPerDay ?? 0;
+      if (usage !== null) {
+        setAiScansUsedToday(usage.aiScansUsedToday ?? 0);
+      } else {
+        console.warn('Could not fetch daily usage — assuming limit reached');
+        setAiScansUsedToday(scansPerDay); // assume exhausted
       }
     } catch (err) {
       console.error('Failed to load subscription data:', err);
@@ -50,7 +60,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     refreshSubscription();
   }, []);
