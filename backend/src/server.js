@@ -102,3 +102,25 @@ server.listen(PORT, () => {
   console.log(`KhabirLens API running on http://localhost:${PORT}`);
   console.log(`Socket.IO attached`);
 });
+
+
+// Add this BEFORE the 404 handler in server.js
+app.get('/api/debug/db', async (req, res) => {
+  try {
+    const prisma = require('./config/db');
+    const result = await prisma.$queryRaw`SELECT 1 as connected`;
+    const count = await prisma.user.count();
+    res.json({ 
+      status: 'OK', 
+      dbConnected: true, 
+      userCount: count,
+      message: 'Database is connected' 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      dbConnected: false, 
+      error: error.message 
+    });
+  }
+});
