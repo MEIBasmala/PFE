@@ -53,28 +53,32 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
   }
   // ── END SUBSCRIPTION CHECK ─────────────────────────────────────
 
-    try {
+     try {
     return await prisma.$transaction(async (tx) => {
-      // 1. Lock and fetch the slot row
-      const slot = await tx.availableSlot.findUnique({
-        where: { id: slotIdInt },
-      });
+      // CRITICAL FIX: Use raw query with FOR UPDATE to lock the row
+      const slotResult = await tx.$queryRaw`
+        SELECT * FROM "available_slots" 
+        WHERE id = ${slotIdInt} 
+        FOR UPDATE
+      `;
+      
+      const slot = slotResult[0];
       if (!slot) throw new Error('Slot not found');
       if (slot.isBooked) throw new Error('Slot is already booked');
 
-      // 2. Verify the slot belongs to the requested nutritionist
+      // Verify slot belongs to nutritionist
       if (slot.nutritionistId !== nutritionistIdInt) {
         throw new Error('Slot does not belong to that nutritionist');
       }
 
-      // 3. Prevent booking slots in the past
+      // Prevent past slots
       const now = new Date();
       now.setHours(0, 0, 0, 0);
       if (new Date(slot.date) < now) {
         throw new Error('Cannot book a slot in the past');
       }
 
-      // 4. Create the appointment WITH subscriptionId
+      // Create appointment
       const jitsiLink = `https://meet.jit.si/KhabirLens-${Date.now()}`;
       const appointment = await tx.appointment.create({
         data: {
@@ -83,7 +87,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
           slotId: slotIdInt,
           status: 'PENDING',
           jitsiLink,
-          subscriptionId: activeSub.id, 
+          subscriptionId: activeSub.id,
         },
         include: {
           nutritionist: { include: { user: true } },
@@ -91,7 +95,7 @@ const bookAppointment = async (userId, { slotId, nutritionistId }) => {
         },
       });
 
-      // 5. Mark the slot as booked
+      // Mark slot as booked
       await tx.availableSlot.update({
         where: { id: slotIdInt },
         data: { isBooked: true },

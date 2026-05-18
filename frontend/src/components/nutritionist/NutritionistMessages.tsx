@@ -65,7 +65,7 @@ export default function NutritionistMessages() {
     }
   }, []);
 
-  // ── Socket.IO setup — runs once on mount ──────────────────────────────────
+    // ── Socket.IO setup — runs once on mount ──────────────────────────────────
   useEffect(() => {
     const socket = io(SOCKET_URL, {
       auth: { token: getToken() },
@@ -79,10 +79,16 @@ export default function NutritionistMessages() {
     socket.on("connect", () => setConnected(true));
     socket.on("disconnect", () => setConnected(false));
 
-    socket.on("new_message", ({ message }: { message: Message }) => {
+    // Use a ref for user id to avoid stale closure
+    const getUserId = () => user?.id;
+
+    const handleNewMessage = ({ message }: { message: Message }) => {
+      const currentUserId = getUserId();
+      if (!currentUserId) return; // Don't process if not logged in
+      
       const currentActiveId = activeIdRef.current;
       const otherId =
-        message.senderId === user?.id ? message.receiverId : message.senderId;
+        message.senderId === currentUserId ? message.receiverId : message.senderId;
 
       if (otherId === currentActiveId || message.senderId === currentActiveId) {
         setMessages((prev) => {
@@ -92,20 +98,24 @@ export default function NutritionistMessages() {
         socket.emit("mark_read", { messageId: message.id });
       }
       loadConversations();
-    });
+    };
 
-    socket.on("message_sent", ({ message }: { message: Message }) => {
+    const handleMessageSent = ({ message }: { message: Message }) => {
+      const currentUserId = getUserId();
+      if (!currentUserId) return;
+      
       setMessages((prev) => {
         if (prev.some((m) => m.id === message.id)) return prev;
         return [...prev, message];
       });
       loadConversations();
-    });
+    };
 
+    socket.on("new_message", handleNewMessage);
+    socket.on("message_sent", handleMessageSent);
     socket.on("new_notification", () => {
       window.dispatchEvent(new CustomEvent("notifications:refresh"));
     });
-
     socket.on("message_error", ({ error }: { error: string }) => {
       toast.error(error || "Failed to send message");
     });
@@ -119,11 +129,18 @@ export default function NutritionistMessages() {
     }, FALLBACK_POLL_MS);
 
     return () => {
+      // CRITICAL FIX: Remove specific handlers before disconnect
+      socket.off("new_message", handleNewMessage);
+      socket.off("message_sent", handleMessageSent);
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("new_notification");
+      socket.off("message_error");
       socket.disconnect();
       clearInterval(fallbackInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // only re-create socket if the logged-in user changes
+  }, [user?.id]);
 
   // ── Initial data load ─────────────────────────────────────────────────────
   useEffect(() => {

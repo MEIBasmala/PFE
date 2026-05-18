@@ -56,9 +56,9 @@ const createNutritionist = async (req, res) => {
     const { nutritionist, tempPassword } = await adminService.createNutritionist(req.user.id, req.body);
     res.status(201).json({
       success: true,
-      message: 'Nutritionist created successfully',
+      message: 'Nutritionist created successfully. Save this password — it will not be shown again.',
       nutritionist,
-      tempPassword,
+      tempPassword, // Still exposed, but admin UI handles it once
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -133,7 +133,7 @@ const getAllPayments = async (req, res) => {
 
 const exportPaymentsCSV = async (req, res) => {
   try {
-    const payments = await adminService.getAllPayments();
+    const { payments } = await adminService.getAllPayments(1, 10000); // FIX: destructure + high limit
     const csvRows = [
       CSV_EXPORT.HEADERS,
       ...payments.map((p) => [

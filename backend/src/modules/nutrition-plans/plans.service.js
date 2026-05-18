@@ -93,9 +93,11 @@ const updatePlan = async (userId, planId, data) => {
   if (!plan) throw new Error('Plan not found');
   if (plan.nutritionistId !== nutritionist.id) throw new Error('Unauthorized');
 
+  // Security: Strip any fields that should never be user-updatable
+  const { patientId, nutritionistId, pdfUrl, isTemplate, createdAt, updatedAt, ...safeData } = data;
+  
   const oldStatus = plan.status;
-  const updated = await plansRepo.updatePlan(planId, data);
-
+  const updated = await plansRepo.updatePlan(planId, safeData);
   // Notify patient on activation — non-blocking
   if (data.status === 'ACTIVE' && oldStatus !== 'ACTIVE') {
     setImmediate(async () => {

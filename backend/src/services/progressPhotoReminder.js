@@ -2,74 +2,78 @@ const cron = require('node-cron');
 const prisma = require('../config/db');
 const { createNotification } = require('../modules/notifications/notifications.service');
 
+const BATCH_SIZE = 500;
+
 async function sendProgressPhotoReminders() {
   const today = new Date();
-  const thirtyDaysAgo = new Date();
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
-  // Find patients who have at least one progress photo,
-  // and the most recent one is more than 30 days old.
-  const patientsWhoNeedReminder = await prisma.patient.findMany({
+  // ── Phase 1: Patients with old photos (single raw query) ──
+  const patientsWithOldPhotos = await prisma.$queryRaw`
+    SELECT p."userId", MAX(pp."createdAt") as "lastPhotoDate"
+    FROM "patients" p
+    JOIN "progress_photos" pp ON pp."patientId" = p.id
+    GROUP BY p.id, p."userId"
+    HAVING MAX(pp."createdAt") <= ${thirtyDaysAgo}
+  `;
+
+  // ── Phase 2: Patients with no photos and old accounts ──
+  const patientsWithNoPhotos = await prisma.$queryRaw`
+    SELECT p."userId"
+    FROM "patients" p
+    JOIN "users" u ON u.id = p."userId"
+    WHERE NOT EXISTS (
+      SELECT 1 FROM "progress_photos" pp WHERE pp."patientId" = p.id
+    )
+    AND u."createdAt" <= ${thirtyDaysAgo}
+  `;
+
+  const allUserIds = [
+    ...patientsWithOldPhotos.map(p => p.userId),
+    ...patientsWithNoPhotos.map(p => p.userId),
+  ];
+
+  const uniqueUserIds = [...new Set(allUserIds)];
+  if (uniqueUserIds.length === 0) return;
+
+  // ── Phase 3: Bulk check who already got notified today ──
+  const existingToday = await prisma.notification.findMany({
     where: {
-      progressPhotos: {
-        some: {},  // at least one photo
-      },
-      // Using a raw SQL condition because Prisma doesn't support nested aggregation easily.
-      // Alternative: fetch all patients with photos and filter in memory (simpler, safe because few users).
+      type: 'PROGRESS_PHOTO',
+      createdAt: { gte: startOfDay },
+      userId: { in: uniqueUserIds },
     },
-    include: {
-      progressPhotos: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-      },
-      user: true,
-    },
+    select: { userId: true },
   });
 
-  // Filter in memory to find those whose last photo > 30 days
-  const toNotify = patientsWhoNeedReminder.filter(p => {
-    const lastPhoto = p.progressPhotos[0];
-    if (!lastPhoto) return false;
-    const daysSinceLast = (today - new Date(lastPhoto.createdAt)) / (1000 * 60 * 60 * 24);
-    return daysSinceLast >= 30;
-  });
+  const notifiedToday = new Set(existingToday.map(n => n.userId));
+  const needsNotification = uniqueUserIds.filter(id => !notifiedToday.has(id));
 
-  // Also include patients who have **no** progress photos and whose account is older than 30 days
-  const patientsWithNoPhotos = await prisma.patient.findMany({
-    where: {
-      progressPhotos: { none: {} },
-      user: {
-        createdAt: { lte: thirtyDaysAgo },
-      },
-    },
-    include: { user: true },
-  });
-
-  const allToNotify = [...toNotify, ...patientsWithNoPhotos];
-
-  for (const patient of allToNotify) {
-    // Avoid duplicate notifications in the same day? We'll check if a notification of type "PROGRESS_PHOTO" was already sent today.
-    const existingToday = await prisma.notification.findFirst({
-      where: {
-        userId: patient.userId,
-        type: 'PROGRESS_PHOTO',
-        createdAt: { gte: new Date(today.setHours(0, 0, 0, 0)) },
-      },
-    });
-    if (!existingToday) {
-      await createNotification(
-        patient.userId,
-        'PROGRESS_PHOTO',
-        `It's time to upload your monthly progress photo! 📸 Show us your transformation.`
-      );
+  // ── Phase 4: Single fast createMany (no N+1, no memory bloat) ──
+  if (needsNotification.length > 0) {
+    for (let i = 0; i < needsNotification.length; i += BATCH_SIZE) {
+      const batch = needsNotification.slice(i, i + BATCH_SIZE);
+      await prisma.notification.createMany({
+        data: batch.map(userId => ({
+          userId,
+          type: 'PROGRESS_PHOTO',
+          message: `It's time to upload your monthly progress photo! 📸 Show us your transformation.`,
+          isRead: false,
+        })),
+      });
     }
+    console.log(`[ProgressPhotoReminder] Sent ${needsNotification.length} reminders`);
   }
 }
 
 // Schedule the job to run every day at 9:00 AM
 cron.schedule('0 9 * * *', () => {
   console.log('Running progress photo reminder job...');
-  sendProgressPhotoReminders().catch(console.error);
+  sendProgressPhotoReminders().catch(err => {
+    console.error('[ProgressPhotoReminder] Job failed:', err);
+  });
 });
 
 module.exports = { sendProgressPhotoReminders };

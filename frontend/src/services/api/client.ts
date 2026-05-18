@@ -87,31 +87,30 @@ export async function apiFetch<T>(
   let response = await makeRequest(getToken());
 
   // ── 401 handling: attempt one silent refresh ─────────────
-    if (
-    response.status === 401 &&
-    !endpoint.startsWith('/auth/')
-  ) {
+      if (response.status === 401 && !endpoint.startsWith('/auth/')) {
     if (!isRefreshing) {
       isRefreshing = true;
       try {
         const newToken = await refreshAccessToken();
         notifyRefreshSubscribers(newToken);
       } catch {
-        // Refresh failed — clear flag and logout
+        notifyRefreshSubscribers(''); // Notify with empty to unblock waiters
         isRefreshing = false;
+        refreshSubscribers = [];
         await logout(false);
         throw new Error('Session expired. Please log in again.');
       }
-      // On success: isRefreshing stays true until after subscribers retry
+      isRefreshing = false; // Reset BEFORE retrying our own request
     }
 
-    // Wait for the refresh to complete (either ours or another request's)
+    // Wait for refresh (either ours or another request's)
     const retryToken = await new Promise<string>((resolve) => {
       subscribeToRefresh(resolve);
     });
 
-    // Now all subscribers have their token — safe to clear the flag
-    isRefreshing = false;
+    if (!retryToken) {
+      throw new Error('Session expired. Please log in again.');
+    }
 
     response = await makeRequest(retryToken);
   }

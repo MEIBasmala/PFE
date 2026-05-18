@@ -303,22 +303,27 @@ export {
 export {
   Sidebar,
   SidebarContent,
-  SidebarTrigger,
-  SidebarProvider,
-  SidebarInset,
-  SidebarHeader,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarInset,
   SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarMenuAction,
   SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarMenuSkeleton,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarProvider,
   SidebarRail,
   SidebarSeparator,
+  SidebarTrigger,
   useSidebar,
 } from './sidebar';
 
@@ -381,4 +386,8 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tool
 export { useToast, toast } from './use-toast';
 
 // ─── Scroll Reveal Components ─────────────────────────────
-export { default as AnimateOnScroll, StaggerContainer } from './AnimateOnScroll';
+export {
+  default as AnimateOnScroll,
+  StaggerContainer,
+  AnimatedCounter,
+} from './AnimateOnScroll';

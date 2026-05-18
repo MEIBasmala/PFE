@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui";
 import { useNavigate } from 'react-router-dom';
+
 interface UIMessage {
   id: string;
   role: 'USER' | 'ASSISTANT';
@@ -52,6 +53,12 @@ export default function PatientChatbot() {
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const isStreamingRef = useRef(false);
+
+  // Sync ref with state for event listeners
+  useEffect(() => {
+    isStreamingRef.current = isStreaming;
+  }, [isStreaming]);
 
   // Mount safety for SSR
   useEffect(() => setMounted(true), []);
@@ -79,9 +86,44 @@ export default function PatientChatbot() {
     return () => document.removeEventListener('keydown', onEscape);
   }, []);
 
-  // Cleanup streaming on unmount
+  // ── CRITICAL FIX: Abort streaming on unmount ─────────────────────────────
   useEffect(() => {
-    return () => abortRef.current?.abort();
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  // ── CRITICAL FIX: Abort on page hide / tab close / navigation ──────────
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isStreamingRef.current) {
+        abortRef.current?.abort();
+        setIsStreaming(false);
+        setIsTyping(false);
+      }
+    };
+
+    const handlePageHide = () => {
+      if (isStreamingRef.current) {
+        abortRef.current?.abort();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (isStreamingRef.current) {
+        abortRef.current?.abort();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const buildHistory = useCallback((): ChatMessage[] => {
@@ -361,7 +403,6 @@ export default function PatientChatbot() {
                       className="ml-2 inline-flex items-center rounded-md bg-[hsl(var(--saffron))] px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-[hsl(var(--orange))]"
                     >
                       Upgrade now →
-
                     </button>
                   </AlertDescription>
                 </Alert>

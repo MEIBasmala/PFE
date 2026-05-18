@@ -65,7 +65,11 @@ import {
 } from "@/components/ui";
 
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!STRIPE_KEY) {
+  console.error('[PatientSubscription] VITE_STRIPE_PUBLISHABLE_KEY is not set');
+}
+const stripePromise = STRIPE_KEY ? loadStripe(STRIPE_KEY) : Promise.resolve(null);
 
 // ─── Classifiers ──────────────────────────────────────────────────────────────
 const isSeasonal = (pkg: Package) => pkg.isSeasonal === true || !!pkg.duration;
@@ -357,6 +361,30 @@ const StripePaymentForm = ({
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
 
+  // GUARD: Stripe failed to initialize — show error instead of broken form
+  if (!stripe) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Payment Unavailable</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <p className="text-sm text-destructive mb-2">
+              ⚠️ Payment system is not configured.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Please contact support or try again later.
+            </p>
+          </div>
+          <Button onClick={onClose} className="w-full">
+            Close
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
@@ -377,22 +405,15 @@ const StripePaymentForm = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      {/*
-        max-h-[90dvh]: dynamic viewport height accounts for mobile browser chrome.
-        flex-col + overflow-hidden on root, overflow-y-auto on body, sticky footer
-        keeps the Pay button always visible without scrolling past it.
-      */}
       <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-xl p-0 sm:w-full">
         <DialogHeader className="shrink-0 border-b px-5 py-4">
           <DialogTitle>Complete Payment</DialogTitle>
         </DialogHeader>
-
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <form id="stripe-payment-form" onSubmit={handleSubmit} className="space-y-4">
             <PaymentElement />
           </form>
         </div>
-
         <div className="shrink-0 border-t px-5 py-4">
           <Button
             type="submit"

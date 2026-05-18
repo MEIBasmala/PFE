@@ -2,10 +2,21 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {Navbar , Footer} from '@/components/layout';
+import { Navbar, Footer } from '@/components/layout';
 
 import { toast } from '@/hooks/use-toast';
-import {ScrollToTop} from '@/components/ui';
+import {
+  ScrollToTop,
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Textarea,
+  Label,
+  Badge,
+  Separator,
+} from '@/components/ui';
+
 import { Mail, Phone, MapPin, Send, Sparkles } from 'lucide-react';
 import '../styles/homepage.css';
 
@@ -45,17 +56,22 @@ const Contact = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-wide uppercase text-kl-green-dark bg-kl-green-light/50 px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
+          <Badge
+            variant="secondary"
+            className="mb-6 px-4 py-1.5 text-sm font-semibold tracking-wide uppercase inline-flex items-center gap-2"
+          >
             <Sparkles size={16} /> Get in Touch
-          </span>
-          <h1 className="font-syne text-5xl md:text-6xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-kl-green-dark to-kl-orange bg-clip-text text-transparent">
+          </Badge>
+          <h1 className="font-syne text-5xl md:text-6xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-[hsl(var(--green-dark))] to-[hsl(var(--orange))] bg-clip-text text-transparent">
             Contact Us
           </h1>
-          <p className="text-lg text-kl-text-m max-w-2xl mx-auto">
+          <p className="text-lg text-[hsl(var(--text-m))] max-w-2xl mx-auto">
             Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
           </p>
         </div>
       </section>
+
+      <Separator className="mx-[6%]" />
 
       {/* Contact Form & Info */}
       <section className="py-16 px-[6%]">
@@ -63,93 +79,104 @@ const Contact = () => {
           {/* Left – Contact Info */}
           <div className="space-y-8">
             <div>
-              <h2 className="font-syne text-3xl font-bold mb-4 bg-gradient-to-r from-kl-green-dark to-kl-orange bg-clip-text text-transparent">
+              <h2 className="font-syne text-3xl font-bold mb-4 bg-gradient-to-r from-[hsl(var(--green-dark))] to-[hsl(var(--orange))] bg-clip-text text-transparent">
                 Contact Information
               </h2>
-              <p className="text-kl-text-m">
+              <p className="text-[hsl(var(--text-m))]">
                 You can reach us through any of the channels below. We aim to respond within 24 hours.
               </p>
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-kl-green-light flex items-center justify-center">
-                  <Mail size={18} className="text-kl-green-dark" />
+                <div className="w-10 h-10 rounded-full bg-[hsl(var(--green-light))] flex items-center justify-center">
+                  <Mail size={18} className="text-[hsl(var(--green-dark))]" />
                 </div>
                 <div>
-                  <p className="font-medium text-kl-text-dark">Email</p>
-                  <a href="mailto:hello@khabirlens.com" className="text-kl-text-m hover:text-kl-orange transition-colors">
+                  <p className="font-medium text-[hsl(var(--text-dark))]">Email</p>
+                  <a href="mailto:hello@khabirlens.com" className="text-[hsl(var(--text-m))] hover:text-[hsl(var(--orange))] transition-colors">
                     hello@khabirlens.com
                   </a>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-kl-green-light flex items-center justify-center">
-                  <Phone size={18} className="text-kl-green-dark" />
+                <div className="w-10 h-10 rounded-full bg-[hsl(var(--green-light))] flex items-center justify-center">
+                  <Phone size={18} className="text-[hsl(var(--green-dark))]" />
                 </div>
                 <div>
-                  <p className="font-medium text-kl-text-dark">Phone</p>
-                  <a href="tel:+213123456789" className="text-kl-text-m hover:text-kl-orange transition-colors">
+                  <p className="font-medium text-[hsl(var(--text-dark))]">Phone</p>
+                  <a href="tel:+213123456789" className="text-[hsl(var(--text-m))] hover:text-[hsl(var(--orange))] transition-colors">
                     +213 123 456 789
                   </a>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-kl-green-light flex items-center justify-center">
-                  <MapPin size={18} className="text-kl-green-dark" />
+                <div className="w-10 h-10 rounded-full bg-[hsl(var(--green-light))] flex items-center justify-center">
+                  <MapPin size={18} className="text-[hsl(var(--green-dark))]" />
                 </div>
                 <div>
-                  <p className="font-medium text-kl-text-dark">Office</p>
-                  <p className="text-kl-text-m">Algiers, Algeria</p>
+                  <p className="font-medium text-[hsl(var(--text-dark))]">Office</p>
+                  <p className="text-[hsl(var(--text-m))]">Algiers, Algeria</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Right – Form */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-kl-text-m mb-1">Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  value={contactForm.name}
-                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                  className="w-full bg-white/90 border border-gray-200 rounded-lg py-3 px-4 focus:border-kl-green focus:ring-2 focus:ring-kl-green-light transition-all"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-kl-text-m mb-1">Email</label>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={contactForm.email}
-                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                  className="w-full bg-white/90 border border-gray-200 rounded-lg py-3 px-4 focus:border-kl-green focus:ring-2 focus:ring-kl-green-light transition-all"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-kl-text-m mb-1">Message</label>
-                <textarea
-                  rows={5}
-                  placeholder="Tell us about your health goals or any questions..."
-                  value={contactForm.message}
-                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                  className="w-full bg-white/90 border border-gray-200 rounded-lg py-3 px-4 focus:border-kl-green focus:ring-2 focus:ring-kl-green-light transition-all resize-none"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-kl-orange to-orange-500 text-white font-semibold py-3 rounded-full hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-70"
-              >
-                {submitting ? 'Sending…' : <><Send size={16} /> Send Message</>}
-              </button>
-            </form>
-          </div>
+          <Card className="bg-white/80 backdrop-blur-sm border-white/50 shadow-lg">
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="contact-name" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="contact-name"
+                    type="text"
+                    placeholder="Your name"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    className="bg-white/90 border-gray-200 focus:border-[hsl(var(--green))] focus:ring-2 focus:ring-[hsl(var(--green-light))]"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="contact-email" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Email
+                  </Label>
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="bg-white/90 border-gray-200 focus:border-[hsl(var(--green))] focus:ring-2 focus:ring-[hsl(var(--green-light))]"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="contact-message" className="text-xs font-bold uppercase tracking-[0.8px] text-[hsl(var(--text-m))]">
+                    Message
+                  </Label>
+                  <Textarea
+                    id="contact-message"
+                    rows={5}
+                    placeholder="Tell us about your health goals or any questions..."
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    className="bg-white/90 border-gray-200 focus:border-[hsl(var(--green))] focus:ring-2 focus:ring-[hsl(var(--green-light))] resize-none"
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  {submitting ? 'Sending…' : <><Send size={16} /> Send Message</>}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </section>
 

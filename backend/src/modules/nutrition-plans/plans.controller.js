@@ -29,7 +29,16 @@ const createPlan = async (req, res) => {
 
 const updatePlan = async (req, res) => {
   try {
-    const plan = await plansService.updatePlan(req.user.id, parseInt(req.params.id), req.body);
+    // CRITICAL FIX: Whitelist allowed update fields
+    const allowedFields = ['name', 'startDate', 'endDate', 'status', 'durationDays', 'pdfNotes'];
+    const sanitizedData = {};
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) {
+        sanitizedData[key] = req.body[key];
+      }
+    }
+    
+    const plan = await plansService.updatePlan(req.user.id, parseInt(req.params.id), sanitizedData);
     res.status(200).json({ success: true, message: 'Plan updated successfully', plan });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

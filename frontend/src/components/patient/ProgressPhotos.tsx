@@ -86,11 +86,16 @@ export default function ProgressPhotos() {
   };
 
   const uploadToCloudinary = async (file: File): Promise<string> => {
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET; // Renamed for consistency
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+
+    if (!uploadPreset || !cloudName) {
+      throw new Error('Cloudinary configuration is missing. Please check your environment variables (VITE_CLOUDINARY_UPLOAD_PRESET, VITE_CLOUDINARY_CLOUD_NAME).');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_progress_photos);
-    formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME);
-    // Optional: add folder
+    formData.append('upload_preset', uploadPreset);
     formData.append('folder', 'progress_photos');
 
     const response = await fetch(

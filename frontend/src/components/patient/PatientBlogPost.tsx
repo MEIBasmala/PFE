@@ -360,7 +360,9 @@ export default function PatientBlogPost() {
               <Heart className={`mr-2 h-4 w-4 ${liked ? "fill-destructive" : ""}`} />
               {displayLikes}
             </Button>
-            <Button variant="outline" onClick={() => toast.info("💬 Comment form coming soon!")}>
+                        <Button variant="outline" onClick={() => {
+              document.querySelector('.border-t')?.scrollIntoView({ behavior: 'smooth' });
+            }}>
               <MessageCircle className="mr-2 h-4 w-4" /> {commentCount}
             </Button>
             <Button variant="outline" onClick={copyLink}>

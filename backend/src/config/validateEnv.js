@@ -70,6 +70,30 @@ function validateEnv() {
     process.exit(1);
   }
 
+  // ── Security: JWT secret minimum length ───────────────────────────────────
+  const jwtSecret = process.env.JWT_SECRET;
+  const isDev = process.env.NODE_ENV !== 'production';
+  
+  if (jwtSecret && jwtSecret.length < 32) {
+    if (isDev) {
+      console.warn(
+        '\n⚠️  WARNING: JWT_SECRET is only ' + jwtSecret.length + ' characters long.\n' +
+        '   In production, this MUST be at least 32 characters.\n' +
+        '   Generate a strong secret with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"\n'
+      );
+    } else {
+      console.error(
+        '\n╔══════════════════════════════════════════════════════════════╗\n' +
+        '║              KhabirLens — JWT SECRET TOO SHORT               ║\n' +
+        '╚══════════════════════════════════════════════════════════════╝\n' +
+        '\nJWT_SECRET must be at least 32 characters long for security.\n' +
+        `Current length: ${jwtSecret.length} characters.\n` +
+        'Generate a strong secret with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"\n'
+      );
+      process.exit(1);
+    }
+  }
+
   // Warn about missing optional vars (no exit)
   const warnings = [];
   for (const { key, fallback, reason } of OPTIONAL) {
