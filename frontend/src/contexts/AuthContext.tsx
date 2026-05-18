@@ -26,7 +26,7 @@ interface AuthContextType {
   register: (fullName: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
-  refreshUser: () => Promise<void>;   // ← ADDED
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,16 +35,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ── Reusable profile fetcher ───────────────────────────────────────────────
   const refreshUser = async (): Promise<void> => {
-    if (!checkAuth()) return;
+    if (!checkAuth()) {
+      setUser(null);
+      return;
+    }
     try {
-      const res = await authApi.getProfile(); // GET /auth/me
+      const res = await authApi.getProfile();
       const freshUser = (res as any).user ?? res;
       setUser(freshUser as User);
       saveUser(freshUser);
     } catch {
-      // Token invalid — clear silently
+      // Token invalid — clear everything silently
       setUser(null);
       removeUser();
       removeToken();
@@ -53,12 +55,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const restore = async () => {
-      const saved = getUser<User>();
-      if (saved && checkAuth()) {
-        setUser(saved); // optimistic
-        await refreshUser(); // verify + refresh
+      try {
+        const saved = getUser<User>();
+        // Validate saved user has required fields
+        if (saved && typeof saved === 'object' && 'id' in saved && 'role' in saved && checkAuth()) {
+          setUser(saved);
+          await refreshUser();
+        } else {
+          // Invalid saved data — clear it
+          setUser(null);
+          removeUser();
+          removeToken();
+        }
+      } catch {
+        // localStorage read failed
+        setUser(null);
+        removeUser();
+        removeToken();
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     restore();
@@ -88,8 +104,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     removeUser();
     removeToken();
-    await clientLogout(false);
-    window.location.href = '/auth';
+    try {
+      await clientLogout(false);
+    } catch {
+      // Ignore logout API errors
+    }
+    // Use React Router navigation instead of window.location
+    // This prevents full page reload which breaks SPA on Vercel
   };
 
   const updateUser = (u: User) => {
@@ -107,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         logout,
         updateUser,
-        refreshUser,   // ← ADDED
+        refreshUser,
       }}
     >
       {children}

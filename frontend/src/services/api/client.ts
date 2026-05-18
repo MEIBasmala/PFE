@@ -9,10 +9,20 @@ export const removeUser = () => localStorage.removeItem('kl_user');
 export const getToken = (): string | null => localStorage.getItem('kl_token');
 
 export const isAuthenticated = () => !!getToken();
+
 export const getUser = <T = any>(): T | null => {
   const u = localStorage.getItem('kl_user');
   if (!u) return null;
-  try { return JSON.parse(u) as T; } catch { return null; }
+  try { 
+    const parsed = JSON.parse(u) as T;
+    // Validate it's actually a valid user object
+    if (parsed && typeof parsed === 'object' && 'id' in parsed && 'role' in parsed) {
+      return parsed;
+    }
+    return null;
+  } catch { 
+    return null; 
+  }
 };
 
 // ── Logout: clears local storage AND asks server to clear the cookie ─────────
@@ -20,15 +30,15 @@ export const logout = async (redirect = true) => {
   removeToken();
   removeUser();
   try {
-    // Tell the server to clear the httpOnly refreshToken cookie
     await fetch(`${BASE_URL}/auth/refresh/logout`, {
       method: 'POST',
-      credentials: 'include', // sends the cookie so server can clear it
+      credentials: 'include',
     });
   } catch {
-    // fire-and-forget — even if this fails, we still redirect
+    // fire-and-forget
   }
-  if (redirect) window.location.href = '/auth';
+  // NEVER use window.location.href in a React SPA — it breaks Vercel routing
+  // Instead, let the caller handle navigation via React Router
 };
 
 // ── Refresh token state ──────────────────────────────────────
@@ -46,10 +56,9 @@ function notifyRefreshSubscribers(token: string) {
 
 // ── Try to get a new access token using the httpOnly cookie ──
 async function refreshAccessToken(): Promise<string> {
-  // The backend reads req.cookies.refreshToken — credentials:'include' sends it automatically
   const res = await fetch(`${BASE_URL}/auth/refresh`, {
     method: 'POST',
-    credentials: 'include', // <-- this is what was missing before
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -58,7 +67,7 @@ async function refreshAccessToken(): Promise<string> {
   }
 
   const { token } = await res.json();
-  setToken(token); // store new access token
+  setToken(token);
   return token;
 }
 
@@ -80,30 +89,29 @@ export async function apiFetch<T>(
     return fetch(url, {
       ...options,
       headers,
-      credentials: 'include', // always include cookies (needed for refresh cookie on retry)
+      credentials: 'include',
     });
   };
 
   let response = await makeRequest(getToken());
 
   // ── 401 handling: attempt one silent refresh ─────────────
-      if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+  if (response.status === 401 && !endpoint.startsWith('/auth/')) {
     if (!isRefreshing) {
       isRefreshing = true;
       try {
         const newToken = await refreshAccessToken();
         notifyRefreshSubscribers(newToken);
       } catch {
-        notifyRefreshSubscribers(''); // Notify with empty to unblock waiters
+        notifyRefreshSubscribers('');
         isRefreshing = false;
         refreshSubscribers = [];
         await logout(false);
         throw new Error('Session expired. Please log in again.');
       }
-      isRefreshing = false; // Reset BEFORE retrying our own request
+      isRefreshing = false;
     }
 
-    // Wait for refresh (either ours or another request's)
     const retryToken = await new Promise<string>((resolve) => {
       subscribeToRefresh(resolve);
     });
@@ -123,7 +131,7 @@ export async function apiFetch<T>(
   return response.json();
 }
 
-// ── Blob download wrapper (for CSV, PDF, etc.) ──────────────────
+// ── Blob download wrapper ──────────────────
 export async function apiFetchBlob(
   endpoint: string,
   options: RequestInit = {}
