@@ -64,12 +64,14 @@ const forgotPassword = async (email) => {
   const user = await authRepo.findByEmail(email);
   if (!user) throw new Error('No account found with this email');
 
-  const token = crypto.randomBytes(32).toString('hex');
+  // Generate raw token for email, hash for DB storage
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
   const expiry = new Date(Date.now() + 60 * 60 * 1000);
 
-  await authRepo.saveResetToken(user.id, token, expiry);
+  await authRepo.saveResetToken(user.id, hashedToken, expiry);
 
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${rawToken}`;
   try {
     await sendEmail({
       to: user.email,
@@ -83,7 +85,8 @@ const forgotPassword = async (email) => {
     console.log('Email notification failed:', emailError.message);
   }
 
-  return { user, token };
+  // Return raw token for testing/debugging (not in production response ideally)
+  return { user, token: rawToken };
 };
 
 //  Reset Password 

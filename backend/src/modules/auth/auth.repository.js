@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const prisma = require('../../config/db');
 
 //  Find User by Email 
@@ -20,11 +21,12 @@ const findById = async (id) => {
   });
 };
 
-//  Find User by Reset Token 
-const findByResetToken = async (token) => {
+//  Find User by Reset Token (hashes input before comparing)
+const findByResetToken = async (rawToken) => {
+  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
   return await prisma.user.findFirst({
     where: {
-      resetToken: token,
+      resetToken: hashedToken,
       resetTokenExpiry: { gt: new Date() },
     },
   });

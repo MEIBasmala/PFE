@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { nutritionistProfileApi, changePassword } from "@/services/api";
 import type { Nutritionist } from "@/types/api";
 import { useAuth } from "@/contexts/AuthContext";
+import {logger } from "@/lib/logger";
+
 
 import {
   Card,
@@ -52,7 +54,7 @@ export default function NutritionistProfile() {
         setForm(profile);
         setSpecialtiesText(profile.specialization ?? "");
       } catch (err) {
-        console.error("Failed to load profile:", err);
+        logger.error("Failed to load profile:", err);
         setError(err instanceof Error ? err.message : "Failed to load profile");
         toast.error("Failed to load profile");
       } finally {

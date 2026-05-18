@@ -119,7 +119,6 @@ export const exportPaymentsCSV = async () => {
     a.click();
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('Export failed:', error);
     toast.error('Export failed');
   }
 };

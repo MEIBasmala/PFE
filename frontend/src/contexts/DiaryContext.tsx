@@ -4,6 +4,7 @@ import { getMyFoodLogs, getMyFoodLogsForWeek, createFoodLog, deleteFoodLog, uplo
 import type { UIFoodLog, MealCategory } from '@/types/api';
 import { toIsoDate } from '@/lib/date';
 import { toast } from 'sonner';
+import {logger} from "@/lib/logger";
 
 export interface DayCalories {
   date: string;   // YYYY-MM-DD
@@ -67,7 +68,7 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
       const data = await getMyFoodLogs(targetDate);
       setLogs(data);
     } catch (error) {
-      console.error('Failed to fetch diary logs', error);
+      logger.error('Failed to fetch diary logs', error);
       setLogs([]);
     } finally {
       setLoading(false);
@@ -105,7 +106,7 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
         }))
       );
         } catch (error) {
-      console.error('Batch week fetch failed:', error);
+      logger.error('Batch week fetch failed:', error);
       // Graceful fallback: show zeroed bars instead of firing 7 parallel calls
       const days = getWeekDates(isoDate);
       setWeekData(days.map((d) => ({ date: d, calories: 0 })));
@@ -133,7 +134,7 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
       // always refetch both — keeps diary list and chart in sync
       await Promise.all([fetchLogs(date), fetchWeek(date)]);
     } catch (error) {
-      console.error('Failed to add log', error);
+      logger.error('Failed to add log', error);
       toast.error('Failed to add meal entry');
       throw error;
     }
@@ -146,7 +147,7 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
       // update the week bar for today
       await fetchWeek(date);
     } catch (error) {
-      console.error('Failed to delete log', error);
+      logger.error('Failed to delete log', error);
       toast.error('Failed to delete entry');
       throw error;
     }
@@ -162,7 +163,7 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
       await Promise.all([fetchLogs(date), fetchWeek(date)]);
       return true;
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      logger.error('AI analysis failed:', error);
       toast.error('Could not analyze the meal. Please try again.');
       return false;
     }

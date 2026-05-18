@@ -40,7 +40,6 @@ export const getNutritionists = async (): Promise<Nutritionist[]> => {
       },
     }));
   } catch (err) {
-    console.error('Failed to fetch nutritionists:', err);
     return [];
   }
 };

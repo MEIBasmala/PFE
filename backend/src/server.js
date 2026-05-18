@@ -1,5 +1,12 @@
 require('dotenv').config();
 
+// ── UNHANDLED REJECTION HANDLER (must be first) ─────────────────────────
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // In production, you might want to exit and let PM2/Render restart
+  // process.exit(1);
+});
+
 const validateEnv = require('./config/validateEnv');
 validateEnv();
 
@@ -48,8 +55,9 @@ app.use('/api', generalLimiter);
 // Stripe webhook needs raw body before express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ── ADDED: Body size limits (prevents large base64 image crashes) ───────
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
 //  Routes
@@ -91,6 +99,6 @@ app.use((err, req, res, next) => {
 //  Start 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`✅ KhabirLens API running on http://localhost:${PORT}`);
+  console.log(`KhabirLens API running on http://localhost:${PORT}`);
   console.log(`Socket.IO attached`);
 });

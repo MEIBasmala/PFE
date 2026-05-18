@@ -18,6 +18,7 @@ const REQUIRED = [
   { key: 'DATABASE_URL',          reason: 'Prisma needs a database connection string' },
   { key: 'JWT_SECRET',            reason: 'Access tokens are signed with this secret' },
   { key: 'CLIENT_URL',            reason: 'CORS origin and password-reset links need this' },
+  { key: 'NODE_ENV',              reason: 'Controls cookie security, rate limiting, and JWT validation mode' },
 
   // Email (nodemailer)
   { key: 'EMAIL_HOST',            reason: 'Nodemailer SMTP host' },
@@ -92,6 +93,16 @@ function validateEnv() {
       );
       process.exit(1);
     }
+  }
+
+  // ── Validate NODE_ENV value ───────────────────────────────────────────────
+  const validNodeEnvs = ['development', 'production', 'test'];
+  if (!validNodeEnvs.includes(process.env.NODE_ENV)) {
+    console.error(
+      `\n❌ NODE_ENV must be one of: ${validNodeEnvs.join(', ')}\n` +
+      `Current value: "${process.env.NODE_ENV}"\n`
+    );
+    process.exit(1);
   }
 
   // Warn about missing optional vars (no exit)

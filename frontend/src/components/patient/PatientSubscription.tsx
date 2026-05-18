@@ -63,11 +63,12 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui";
+import {logger} from "@/lib/logger";
 
 
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 if (!STRIPE_KEY) {
-  console.error('[PatientSubscription] VITE_STRIPE_PUBLISHABLE_KEY is not set');
+  logger.error('[PatientSubscription] VITE_STRIPE_PUBLISHABLE_KEY is not set');
 }
 const stripePromise = STRIPE_KEY ? loadStripe(STRIPE_KEY) : Promise.resolve(null);
 
@@ -396,6 +397,7 @@ const StripePaymentForm = ({
     });
     if (error) {
       toast.error(error.message);
+      logger.error('[StripePaymentForm] Payment failed:', error);
     } else {
       toast.success("Payment successful! Subscription activated.");
       onSuccess();
@@ -462,7 +464,7 @@ export default function PatientSubscription() {
         const pkgs = await getPackages();
         setAllPackages(Array.isArray(pkgs) ? pkgs : []);
       } catch (err) {
-        console.error(err);
+        logger.error(err);
         toast.error("Could not load subscription plans.");
       } finally {
         setLoading(false);
@@ -474,7 +476,7 @@ export default function PatientSubscription() {
         const res = await getPaymentHistory();
         setHistory(Array.isArray(res) ? res : []);
       } catch (err) {
-        console.error(err);
+        logger.error(err);
       } finally {
         setHistoryLoading(false);
       }

@@ -42,6 +42,8 @@ import {
   ClipboardList,
   Users,
 } from "lucide-react";
+import {logger } from "@/lib/logger";
+
 
 export default function NutritionistPatients() {
   const navigate = useNavigate();
@@ -73,7 +75,7 @@ export default function NutritionistPatients() {
     nutritionistPatientsApi
       .byId(id)
       .then((r) => setSelectedPatientDetail(r.patient ?? null))
-      .catch((e) => console.error("Failed to load patient details", e))
+      .catch((e) => logger.error("Failed to load patient details", e))
       .finally(() => setDetailLoading(false));
   }, [patientId]);
 

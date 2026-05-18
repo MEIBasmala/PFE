@@ -269,7 +269,7 @@ const PatientOnboarding = () => {
         <div className="text-center mb-5">
           <div className="inline-flex items-center gap-2.5">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[hsl(var(--green))] to-[hsl(var(--orange))] flex items-center justify-center text-xl text-white shadow-[0_4px_12px_rgba(194,230,110,0.3)]">
-              <img src="../../img/logo.png" alt="KhabirLens" className="w-11 h-11 rounded-xl" />
+              <img src="/img/logo.png" alt="KhabirLens" className="w-11 h-11 rounded-xl" />
             </div>
             <div className="font-syne font-extrabold text-xl text-[hsl(var(--green-dark))]">
               Khabir<span className="bg-gradient-to-br from-[hsl(var(--green))] to-[hsl(var(--orange))] bg-clip-text text-transparent">Lens</span>

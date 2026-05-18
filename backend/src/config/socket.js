@@ -10,9 +10,16 @@ const {
 let io = null;
 
 const initSocket = (httpServer) => {
+  const clientUrl = process.env.CLIENT_URL;
+  
+  // Warn if CLIENT_URL is not set (prevents silent localhost fallback in production)
+  if (!clientUrl && process.env.NODE_ENV === 'production') {
+    console.error('❌ CRITICAL: CLIENT_URL is not set. Socket.IO CORS will fail.');
+  }
+
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:5173",
+      origin: clientUrl || "http://localhost:5173",
       methods: ["GET", "POST"],
       credentials: true,
     },

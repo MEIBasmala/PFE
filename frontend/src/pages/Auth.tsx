@@ -204,7 +204,7 @@ const Auth = () => {
         <div className="mb-6 text-center">
           <Link to="/" className="inline-flex items-center gap-2.5 transition-transform hover:scale-105">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(var(--green))] to-[hsl(var(--orange))] shadow-md">
-              <img src="../../img/logo.png" alt="KhabirLens" className="h-11 w-11 rounded-xl object-cover" />
+              <img src="/img/logo.png" alt="KhabirLens" className="h-11 w-11 rounded-xl object-cover" />
             </div>
             <div className="font-syne text-2xl font-extrabold text-[hsl(var(--green-dark))]">
               Khabir<span className="bg-gradient-to-br from-[hsl(var(--green))] to-[hsl(var(--orange))] bg-clip-text text-transparent">Lens</span>

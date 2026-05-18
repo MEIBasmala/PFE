@@ -2,6 +2,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getMySubscription, getPackages, getDailyUsage } from '@/services/api';
 import type { Package, Subscription } from '@/types/api';
+import {logger } from "@/lib/logger";
+
 
 interface SubscriptionContextValue {
   plan: string;
@@ -51,16 +53,16 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       if (usage !== null) {
         setAiScansUsedToday(usage.aiScansUsedToday ?? 0);
       } else {
-        console.warn('Could not fetch daily usage — assuming limit reached');
+        logger.warn('Could not fetch daily usage — assuming limit reached');
         setAiScansUsedToday(scansPerDay); // assume exhausted
       }
     } catch (err) {
-      console.error('Failed to load subscription data:', err);
+      logger.error('Failed to load subscription data:', err);
     } finally {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     refreshSubscription();
   }, []);
