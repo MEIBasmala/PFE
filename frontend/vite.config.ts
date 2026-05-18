@@ -1,11 +1,10 @@
 // frontend/vite.config.ts
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";  
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   server: {
     host: "::",
     port: 8080,
@@ -13,43 +12,21 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react()],  // ← REMOVED: componentTagger (dev only, can cause issues)
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
-  // ✅ ADD THIS BUILD SECTION
   build: {
+    outDir: "dist",
+    sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          // Vendor chunks for node_modules
-          if (id.includes('node_modules')) {
-            // Isolate React core
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            // Isolate icon library
-            if (id.includes('lucide-react')) {
-              return 'icons';
-            }
-            // Isolate charting libraries if you use them
-            if (id.includes('chart.js') || id.includes('recharts') || id.includes('@reactchartjs')) {
-              return 'charts';
-            }
-            // Isolate TanStack Query if heavily used
-            if (id.includes('@tanstack/react-query')) {
-              return 'query';
-            }
-            // All other dependencies
-            return 'vendor';
-          }
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
         },
       },
     },
-    // Optional: increase warning limit (not recommended, fix instead)
-    // chunkSizeWarningLimit: 1000,
   },
-}));
+});
