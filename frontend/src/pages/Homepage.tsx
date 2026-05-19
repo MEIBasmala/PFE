@@ -921,7 +921,7 @@ const Homepage = ({ onContactSubmit }: HomepageProps) => {
                   </Link>
                 ) : (
                   <Link to="/auth" className="pricing-cta-ipad-inner group">
-                    <ArrowRight size={24} className="text-[hsl(var(--orange))] mb-2" />
+                    <ArrowRight size={24} className="text-[hsl(var(--pure-white))] mb-2" />
                     <span className="font-syne text-sm font-bold">See All Plans</span>
                   </Link>
                 )}
@@ -1133,7 +1133,7 @@ const Homepage = ({ onContactSubmit }: HomepageProps) => {
             <Sparkles size={16} className="mr-1" /> Get Started
           </Badge>
 
-          <h2 className="font-syne text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-[hsl(var(--green-dark))] to-[hsl(var(--orange))] bg-clip-text text-transparent">
+          <h2 className="font-syne text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-[hsl(var(--text-dark))]"> 
             Ready to eat smarter?
           </h2>
 

@@ -186,16 +186,16 @@ export default function PatientBlog() {
       <div className="w-full max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 ">
 
         {/* Header */}
-        
-<AnimateOnScroll animation="fade-down">
-  <div className="mb-4 md:mb-8 text-center">          <div className="inline-flex items-center justify-center gap-2 mb-2">
-            <Newspaper size={28} className="text-primary" />
-            
-          <p className="text-xs sm:text-base md:text-lg text-muted-foreground mt-1">
-            Expert advice &amp; healthy recipes curated by our nutritionists
-          </p>
+
+        <AnimateOnScroll animation="fade-down">
+          <div className="mb-4 md:mb-8 text-center">         
+            <div className="inline-flex items-center justify-center gap-2 mb-2">
+            <Newspaper size={20} className="text-primary" />
+            <p className="text-xs sm:text-base md:text-lg text-muted-foreground mt-1">
+              Expert advice &amp; healthy recipes curated by our nutritionists
+            </p>
           </div>
-        </div>
+          </div>
         </AnimateOnScroll>
 
         {/* Search — mobile only */}
@@ -217,9 +217,9 @@ export default function PatientBlog() {
               <button
                 key={c.value}
                 onClick={() => setCategory(c.value)}
-className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 btn-press                  ${category === c.value
-                    ? "bg-primary text-primary-foreground border-primary shadow-md"
-                    : "bg-background text-foreground border-border hover:bg-muted hover:-translate-y-0.5"
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border transition-all duration-200 btn-press                  ${category === c.value
+                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                  : "bg-background text-foreground border-border hover:bg-muted hover:-translate-y-0.5"
                   }`}
               >
                 <Icon size={16} />

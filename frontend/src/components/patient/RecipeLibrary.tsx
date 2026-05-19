@@ -184,12 +184,12 @@ export default function RecipeLibrary() {
         {/* Header */}
         <div className="mb-4 md:mb-8 text-center">
           <div className="inline-flex items-center justify-center gap-2 mb-2">
-            <Utensils size={28} className="text-primary" />
-            <h1 className="text-2xl md:text-3xl font-bold font-syne">Recipe Library</h1>
-          </div>
+            <Utensils size={20} className="text-primary" />
+          
           <p className="text-xs sm:text-base md:text-lg text-muted-foreground mt-1">
             Discover healthy meals curated by our nutritionists
           </p>
+          </div>
         </div>
 
         {/* Search — mobile */}

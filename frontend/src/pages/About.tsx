@@ -105,9 +105,9 @@ const techStack = [
   },
   {
     icon: Layers,
-    title: 'Frontend — React / MERN',
+    title: 'Frontend — React / Vite ',
     desc: 'Three role-specific dashboards (Client, Nutritionist, Admin) built in React with a unified design system.',
-    pills: ['React', 'Vite', 'Syne + DM Sans', 'FA6'],
+    pills: ['React', 'TypeScript', 'Vite', 'shadcn UI', 'TailwindCSS', 'Figma'],
     colorClass: 'bg-[hsl(var(--green-light))]',
     iconColor: 'text-[hsl(var(--green-dark))]',
   },
