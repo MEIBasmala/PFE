@@ -1,7 +1,7 @@
 // src/components/ui/NotificationDropdown.tsx
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, Calendar, CreditCard, MessageSquare, Zap } from 'lucide-react';
+import { Bell, Check, Calendar, CreditCard, MessageSquare, Zap, Camera } from 'lucide-react';
 import { notificationsApi } from '@/services/api';
 import type { Notification } from '@/types/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,7 @@ const typeConfig: Record<
   APPOINTMENT: { icon: <Calendar size={14} />,      bg: 'bg-[hsl(var(--green-light))]', color: 'text-[hsl(var(--green-dark))]' },
   PAYMENT:     { icon: <CreditCard size={14} />,    bg: 'bg-[hsl(var(--saffron-light))]', color: 'text-[hsl(var(--saffron))]' },
   PLAN:        { icon: <Zap size={14} />,           bg: 'bg-[hsl(var(--green-light))]', color: 'text-[hsl(var(--green-dark))]' },
+  PROGRESS_PHOTO: { icon: <Camera size={14} />,         bg: 'bg-[hsl(var(--blue-light))]', color: 'text-[hsl(var(--blue-dark))]' },
 };
 
 function timeAgo(dateStr: string): string {
@@ -122,6 +123,9 @@ const NotificationDropdown = () => {
         break;
       case 'PAYMENT':
         if (role === 'PATIENT') navigate('/patient/subscription');
+        break;
+      case 'PROGRESS_PHOTO':
+        if (role === 'PATIENT') navigate('/patient');
         break;
       default:
         break;

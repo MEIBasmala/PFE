@@ -512,7 +512,7 @@ export interface Inquiry {
 export interface Notification {
   id: number;
   userId: number;
-  type: "PLAN" | "APPOINTMENT" | "PAYMENT" | "MESSAGE";
+  type: "PLAN" | "APPOINTMENT" | "PAYMENT" | "MESSAGE" |"PROGRESS_PHOTO";
   message: string;
   isRead: boolean;
   createdAt: ISODateString;

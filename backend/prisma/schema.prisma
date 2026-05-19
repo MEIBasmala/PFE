@@ -256,6 +256,8 @@ model Recipe {
   ingredients  String[]
   instructions String[]
 
+  savedByPatients SavedRecipe[] @relation("RecipeToSavedRecipe")
+
   @@map("recipes")
 }
 
@@ -266,10 +268,13 @@ model SavedRecipe {
   createdAt DateTime @default(now())
   
   patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  recipe    Recipe   @relation("RecipeToSavedRecipe", fields: [recipeId], references: [id], onDelete: Cascade)
   
   @@unique([patientId, recipeId])
   @@map("saved_recipes")
 }
+
+
 
 model Meal {
   id           Int           @id @default(autoincrement())

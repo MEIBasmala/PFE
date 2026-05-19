@@ -45,8 +45,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-import { getBlogArticles,getPackages } from '@/services/api';
-import { BlogPost, ContactPayload} from '@/types';
+import { getBlogArticles, getPackages } from '@/services/api';
+import { BlogPost, ContactPayload } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import '../styles/homepage.css';
 
@@ -191,7 +191,7 @@ const testimonials = [
 /* ─── Component ─── */
 const Homepage = ({ onContactSubmit }: HomepageProps) => {
   const navigate = useNavigate();
-const { user: currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
   // 'role-blog' | 'role-pricing' — to show role-restriction alert inside same modal
   const [modalReason, setModalReason] = useState<'signup' | 'role-blog' | 'role-pricing'>('signup');
@@ -208,54 +208,54 @@ const { user: currentUser } = useAuth();
   const [pricingLoading, setPricingLoading] = useState(true);
 
   /* ── Fetch blog posts ── */
-useEffect(() => {
-  getBlogArticles({})
-    .then((articles) => {
-      const published = articles
-        .filter((a) => a.status === 'PUBLISHED')
-        .slice(0, 3)
-        .map((article) => ({
-          id: article.id,
-          title: article.title,
-          category: article.category || 'General',
-          excerpt: article.content.substring(0, 120) + '...',
-          author: article.admin?.user.fullName || 'KhabirLens Team',
-          date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
-          readTime: `${Math.max(1, Math.ceil(article.content.length / 1000))} min read`,
-          likes: article.likes || 0,
-          comments: article.comments?.length || 0,
-          imageUrl: article.coverImage,
-        }));
-      setBlogPosts(published.length > 0 ? published : FALLBACK_BLOG_POSTS);
-    })
-    .catch(() => setBlogPosts(FALLBACK_BLOG_POSTS))
-    .finally(() => setBlogLoading(false));
-}, []);
+  useEffect(() => {
+    getBlogArticles({})
+      .then((articles) => {
+        const published = articles
+          .filter((a) => a.status === 'PUBLISHED')
+          .slice(0, 3)
+          .map((article) => ({
+            id: article.id,
+            title: article.title,
+            category: article.category || 'General',
+            excerpt: article.content.substring(0, 120) + '...',
+            author: article.admin?.user.fullName || 'KhabirLens Team',
+            date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            }),
+            readTime: `${Math.max(1, Math.ceil(article.content.length / 1000))} min read`,
+            likes: article.likes || 0,
+            comments: article.comments?.length || 0,
+            imageUrl: article.coverImage,
+          }));
+        setBlogPosts(published.length > 0 ? published : FALLBACK_BLOG_POSTS);
+      })
+      .catch(() => setBlogPosts(FALLBACK_BLOG_POSTS))
+      .finally(() => setBlogLoading(false));
+  }, []);
 
-/* ── Fetch pricing packages ── */
-useEffect(() => {
-  getPackages()
-    .then((packages) => {
-      const standard = packages
-        .filter((pkg) => !pkg.isSeasonal && (pkg.priceMonthly ?? 0) > 0)
-        .slice(0, 3)
-        .map((pkg) => ({
-          name: pkg.name,
-          price: `${(pkg.priceMonthly ?? 0).toLocaleString('fr-DZ')} DZD`,
-          period: '/month',
-          features: pkg.features,
-          cta: `Choose ${pkg.name}`,
-          featured: pkg.highlight,
-          badge: pkg.highlight ? 'Most Popular' : null,
-        }));
-      setPricingPlans(standard.length > 0 ? standard : FALLBACK_PRICING_PLANS);
-    })
-    .catch(() => setPricingPlans(FALLBACK_PRICING_PLANS))
-    .finally(() => setPricingLoading(false));
-}, []);
+  /* ── Fetch pricing packages ── */
+  useEffect(() => {
+    getPackages()
+      .then((packages) => {
+        const standard = packages
+          .filter((pkg) => !pkg.isSeasonal && (pkg.priceMonthly ?? 0) > 0)
+          .slice(0, 3)
+          .map((pkg) => ({
+            name: pkg.name,
+            price: `${(pkg.priceMonthly ?? 0).toLocaleString('fr-DZ')} DZD`,
+            period: '/month',
+            features: pkg.features,
+            cta: `Choose ${pkg.name}`,
+            featured: pkg.highlight,
+            badge: pkg.highlight ? 'Most Popular' : null,
+          }));
+        setPricingPlans(standard.length > 0 ? standard : FALLBACK_PRICING_PLANS);
+      })
+      .catch(() => setPricingPlans(FALLBACK_PRICING_PLANS))
+      .finally(() => setPricingLoading(false));
+  }, []);
 
   /* ── Scroll reveal observer — re-runs when async data finishes loading ── */
   useEffect(() => {
@@ -452,9 +452,9 @@ useEffect(() => {
           HERO
       ═══════════════════════════════════════ */}
       <section
-        className="relative overflow-hidden min-h-screen flex flex-col items-center justify-center text-center px-[6%] pt-32 pb-20 z-[1]"
-        id="home"
-      >
+  className="hero-section relative overflow-hidden flex flex-col items-center justify-center text-center px-[6%] pt-20 pb-12 md:pt-24 md:pb-16 lg:pt-28 lg:pb-20 min-h-[calc(100dvh-70px)]"
+  id="home"
+>
         {/* Floating food emojis */}
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
           {floatingFoodsPositions.map((item, i) => (
@@ -592,7 +592,7 @@ useEffect(() => {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-5 mt-10 max-lg:grid-cols-2 max-md:grid-cols-1 reveal-stagger">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-10 reveal-stagger">
             {features.map((f, i) => (
               <Card key={i} className="group">
                 <CardContent className="p-5">
@@ -635,7 +635,7 @@ useEffect(() => {
         <div className="relative z-[1] py-24 px-[6%]">
           <div className="max-w-[1200px] mx-auto grid grid-cols-2 gap-20 items-center max-lg:grid-cols-1">
             {/* Visual */}
-            <div className="relative reveal-left max-lg:order-[-1]">
+            <div className="relative reveal-left max-lg:order-[-1] max-w-md mx-auto lg:max-w-none">
               <Card className="p-10">
                 <div className="flex gap-4 mb-7">
                   {[
@@ -706,8 +706,8 @@ useEffect(() => {
       <Separator className="mx-[6%]" />
 
       {/* ═══════════════════════════════════════
-          BLOG PREVIEW
-      ═══════════════════════════════════════ */}
+    BLOG PREVIEW
+═══════════════════════════════════════ */}
       <section className="blog-section" id="blog-section">
         <div className="reveal text-center">
           <span className="section-tag">
@@ -719,6 +719,7 @@ useEffect(() => {
           </p>
         </div>
 
+        {/* Grid: cards only (3 cols desktop, 2 cols iPad, 1 col mobile) */}
         <div className="home-blog-grid">
           {blogLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
@@ -734,7 +735,6 @@ useEffect(() => {
           ) : (
             blogPosts.map((post) => (
               <Card key={post.id} className="overflow-hidden">
-                {/* Only show lock badge when user isn't a patient */}
                 {(!currentUser || currentUser.role !== 'PATIENT') && (
                   <div className="lock-overlay-badge">
                     <Lock size={10} /> {currentUser ? 'Patient access only' : 'Sign up to read'}
@@ -779,27 +779,46 @@ useEffect(() => {
               </Card>
             ))
           )}
+
+          {/* iPad-only: compact CTA card that fills the 4th grid slot */}
+          {!blogLoading && (
+            <div className="blog-cta-ipad-only">
+              <button onClick={handleBlogAction} className="blog-cta-ipad-inner">
+                <ArrowRight size={24} className="text-[hsl(var(--green-dark))] mb-2" />
+                <span className="font-syne text-sm font-bold text-[hsl(var(--text-dark))]">
+                  {currentUser?.role === 'PATIENT' ? 'Browse All' : 'See All Articles'}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Smart CTA below blog cards */}
-        <div className="text-center mt-8">
+        {/* Desktop & Mobile CTA — hidden on iPad */}
+        <div className="blog-cta-desktop-mobile text-center mt-8">
           {currentUser?.role === 'PATIENT' ? (
-            <Button asChild variant="default">
-              <Link to="/patient/blog" className="no-underline inline-flex items-center gap-2">
-                <BookOpen size={14} /> Browse All Articles <ArrowRight size={14} />
+            <Button asChild variant="default" className="w-full sm:w-auto h-auto min-h-[48px] whitespace-normal">
+              <Link to="/patient/blog" className="no-underline inline-flex items-center justify-center gap-2">
+                <BookOpen size={14} className="flex-shrink-0" />
+                <span>Browse All Articles</span>
+                <ArrowRight size={14} className="flex-shrink-0" />
               </Link>
             </Button>
           ) : (
-            <Button variant="outline" onClick={handleBlogAction}>
-              <Lock size={14} className="mr-1" />
-              {currentUser
-                ? 'Blog access is for client accounts'
-                : 'Sign up to read full articles and comment →'}
+            <Button
+              variant="outline"
+              onClick={handleBlogAction}
+              className="w-full sm:w-auto h-auto min-h-[48px] whitespace-normal py-3"
+            >
+              <Lock size={14} className="mr-1.5 flex-shrink-0" />
+              <span className="text-center leading-snug">
+                {currentUser
+                  ? 'Blog access is for client accounts'
+                  : <>Sign up to read full articles and comment <ArrowRight size={14} className="inline ml-1 align-text-bottom" /></>}
+              </span>
             </Button>
           )}
         </div>
       </section>
-
       <Separator className="mx-[6%]" />
 
       {/* ═══════════════════════════════════════
@@ -837,7 +856,7 @@ useEffect(() => {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-5 mt-10 max-w-[1100px] mx-auto max-lg:grid-cols-2 max-md:grid-cols-1">
+          <div className="pricing-grid-with-cta">
             {pricingLoading
               ? Array.from({ length: 3 }).map((_, i) => (
                 <Card key={i} style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)' }}>
@@ -891,26 +910,48 @@ useEffect(() => {
                   </Card>
                 </div>
               ))}
-          </div>
 
-          {/* Smart CTA below plans */}
-          <div className="text-center mt-10">
-            {currentUser?.role === 'PATIENT' ? (
-              <Button asChild>
-                <Link to="/patient/subscription" className="no-underline inline-flex items-center gap-2">
-                  <Sparkles size={14} />
-                  Manage My Subscription <ArrowRight size={14} />
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" asChild>
-                <Link to="/auth" className="no-underline inline-flex items-center gap-2">
-                  <Sparkles size={14} />
-                  Register to discover more offers & seasonal programs
-                </Link>
-              </Button>
+            {/* iPad-only: compact CTA card */}
+            {!pricingLoading && (
+              <div className="pricing-cta-ipad-only">
+                {currentUser?.role === 'PATIENT' ? (
+                  <Link to="/patient/subscription" className="pricing-cta-ipad-inner group">
+                    <ArrowRight size={24} className="text-[hsl(var(--green-dark))] mb-2" />
+                    <span className="font-syne text-sm font-bold">Manage Plan</span>
+                  </Link>
+                ) : (
+                  <Link to="/auth" className="pricing-cta-ipad-inner group">
+                    <ArrowRight size={24} className="text-[hsl(var(--orange))] mb-2" />
+                    <span className="font-syne text-sm font-bold">See All Plans</span>
+                  </Link>
+                )}
+              </div>
             )}
           </div>
+
+          {/* Desktop & Mobile CTA — hidden on iPad */}
+          <div className="pricing-cta-desktop-mobile text-center mt-10">
+  {currentUser?.role === 'PATIENT' ? (
+    <Button asChild className="w-full sm:w-auto h-auto min-h-[48px] whitespace-normal">
+      <Link to="/patient/subscription" className="no-underline inline-flex items-center justify-center gap-2">
+        <Sparkles size={14} className="flex-shrink-0" /> 
+        <span>Manage My Subscription</span> 
+        <ArrowRight size={14} className="flex-shrink-0" />
+      </Link>
+    </Button>
+  ) : (
+    <Button 
+      variant="outline" 
+      asChild 
+      className="w-full sm:w-auto h-auto min-h-[48px] whitespace-normal py-3"
+    >
+      <Link to="/auth" className="no-underline inline-flex items-center justify-center gap-2 w-full">
+        <Sparkles size={14} className="flex-shrink-0" />
+        <span className="text-center leading-snug">Register to discover more offers & seasonal programs</span>
+      </Link>
+    </Button>
+  )}
+</div>
         </div>
       </section>
 
@@ -948,9 +989,9 @@ useEffect(() => {
             </p>
           </div>
 
-          <div className="grid grid-cols-4 gap-8 mt-14 relative max-md:grid-cols-1 max-md:before:hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-14 relative">
             {/* Connector line */}
-            <div className="absolute top-10 left-[10%] right-[10%] h-px bg-[hsl(var(--green))] opacity-40 max-md:hidden" />
+            <div className="absolute top-10 left-[10%] right-[10%] h-px bg-[hsl(var(--green))] opacity-40 hidden lg:block" />
 
             {steps.map((s, i) => (
               <div
@@ -982,7 +1023,6 @@ useEffect(() => {
           backgroundImage: `url('${IMAGE_URLS.testimonialBg}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
         }}
       >
         <div
@@ -992,11 +1032,11 @@ useEffect(() => {
           }}
         />
         <div
-          className="absolute -top-36 -left-36 w-[480px] h-[480px] rounded-full pointer-events-none z-0 animate-float"
+          className="absolute -top-36 -left-36 w-[280px] h-[280px] sm:w-[480px] sm:h-[480px] rounded-full pointer-events-none z-0 animate-float"
           style={{ background: 'radial-gradient(circle, rgba(194,230,110,0.1) 0%, transparent 70%)' }}
         />
         <div
-          className="absolute -bottom-24 -right-24 w-[360px] h-[360px] rounded-full pointer-events-none z-0 animate-float-delay"
+          className="absolute -bottom-24 -right-24 w-[200px] h-[200px] sm:w-[360px] sm:h-[360px] rounded-full pointer-events-none z-0 animate-float-delay"
           style={{ background: 'radial-gradient(circle, rgba(255,162,87,0.09) 0%, transparent 70%)' }}
         />
 
@@ -1015,7 +1055,7 @@ useEffect(() => {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 max-md:grid-cols-1 reveal-stagger mt-14">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 reveal-stagger mt-14">
             {testimonials.map((t, i) => (
               <Card
                 key={i}
@@ -1076,16 +1116,15 @@ useEffect(() => {
         </div>
       </div>
 
-      <Separator className="mx-[6%]" />
 
       {/* ═══════════════════════════════════════
           CTA SECTION
       ═══════════════════════════════════════ */}
       <section className="relative py-24 px-[6%] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--green-light))]/20 via-transparent to-[hsl(var(--orange-20))]/30 pointer-events-none" />
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[hsl(var(--green))]/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-[hsl(var(--orange))]/10 blur-3xl pointer-events-none" />
-
+        {/* Clamp the blur spread on mobile */}
+        <div className="absolute -top-32 -right-32 w-64 h-64 sm:w-96 sm:h-96 rounded-full bg-[hsl(var(--green))]/10 blur-2xl sm:blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-64 h-64 sm:w-96 sm:h-96 rounded-full bg-[hsl(var(--orange))]/10 blur-2xl sm:blur-3xl" />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <Badge
             variant="secondary"
@@ -1103,7 +1142,7 @@ useEffect(() => {
             KhabirLens has everything you need. Sign up free and see what AI nutrition feels like.
           </p>
 
-          <div className="flex flex-wrap gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-center">
             {currentUser ? (
               <Button asChild size="lg" className="px-8 py-3.5">
                 <Link

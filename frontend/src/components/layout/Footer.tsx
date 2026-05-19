@@ -23,7 +23,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-[hsl(var(--pure-white))] border-t border-[hsl(var(--gray-line))] mt-16">
+    <footer className="bg-[hsl(var(--pure-white))] border-t border-[hsl(var(--gray-line))]">
       <div className="max-w-[1200px] mx-auto px-[6%] pt-12 pb-8">
         <div className="grid grid-cols-1 gap-8 mb-8 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.5fr] text-center md:text-left">
           {/* Brand */}

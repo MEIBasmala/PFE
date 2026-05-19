@@ -55,7 +55,7 @@ const team = [
     role: 'Frontend & UI/UX',
     avatar: 'B',
     bio: 'Designed and built the entire user interface, from wireframes to responsive dashboards. Ensured a seamless, accessible experience for clients, nutritionists, and admins.',
-    tags: ['React / MERN', 'UI/UX Design', 'Responsive', 'Figma'],
+    tags: ['React', 'TypeScript', 'UI/UX Design', 'Responsive', 'Figma'],
     gradient: 'from-kl-green-light to-kl-saffron-light',
   },
   {
@@ -63,8 +63,8 @@ const team = [
     photoUrl: '/team/Anfel.jpg',
     role: 'Backend & API',
     avatar: 'A',
-    bio: 'Developed the Node.js/Express API, MongoDB schema, and JWT authentication. Integrated AI model endpoints and managed role-based access for three user dashboards.',
-    tags: ['Node.js', 'MongoDB', 'REST API', 'JWT Auth'],
+    bio: 'Developed the Node.js/Express API, PostgreSQL schema, and JWT authentication. Integrated AI model endpoints and managed role-based access for three user dashboards.',
+    tags: ['Node.js', 'PostgreSQL', 'REST API', 'JWT Auth'],
     gradient: 'from-kl-saffron-light to-kl-orange-20',
   },
   {
@@ -72,8 +72,8 @@ const team = [
     photoUrl: '/team/Lamis.jpg',
     role: 'AI & Computer Vision',
     avatar: 'L',
-    bio: 'Trained the YOLOv8 food detection model and the calorie regression network. Fine-tuned on FoodInsSeg and Nutrition5k datasets for accurate, real-time nutrition estimation.',
-    tags: ['YOLOv8', 'TensorFlow/Keras', 'Google Colab', 'Python'],
+    bio: 'Trained the YOLOv8 food detection model and the calorie regression network. Fine-tuned on FoodInsSeg dataset forreal-time nutrition estimation.',
+    tags: ['YOLOv8', 'COCO', 'TensorFlow/Keras', 'kaggle', 'Python'],
     gradient: 'from-kl-orange-20 to-kl-green-light',
   },
 ];
@@ -99,7 +99,7 @@ const techStack = [
     icon: Server,
     title: 'Backend — Node.js / Express',
     desc: 'RESTful API handling user auth, nutritionist assignments, meal logs, and AI model inference endpoints.',
-    pills: ['Node.js', 'Express', 'MongoDB', 'JWT'],
+    pills: ['Node.js', 'Express', 'PostgreSQL', 'JWT'],
     colorClass: 'bg-[hsl(var(--orange-20))]',
     iconColor: 'text-[#c05000]',
   },
@@ -337,7 +337,6 @@ const About = () => {
           backgroundImage: "url('https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1600&q=80&auto=format&fit=crop')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
         }}
       >
         <div
@@ -422,7 +421,7 @@ const About = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-8 max-lg:grid-cols-2 max-md:grid-cols-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {team.map((t, i) => (
               <Card
                 key={i}
@@ -488,7 +487,9 @@ const About = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-4 gap-8 mt-14 relative max-md:grid-cols-1 max-md:before:hidden before:content-[''] before:absolute before:top-10 before:left-[10%] before:right-[10%] before:h-px before:bg-[hsl(var(--green))] before:opacity-40">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-14 relative">
+            {/* Connector line */}
+            <div className="absolute top-10 left-[10%] right-[10%] h-px bg-[hsl(var(--green))] opacity-40 hidden lg:block" />
             {steps.map((s, i) => (
               <div
                 key={i}
@@ -525,7 +526,7 @@ const About = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 max-lg:grid-cols-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {techStack.map((t, i) => (
               <Card
                 key={i}
