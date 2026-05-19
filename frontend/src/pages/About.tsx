@@ -577,8 +577,7 @@ const About = () => {
             <Sparkles size={16} className="mr-1" /> Get Started
           </Badge>
 
-          <h2 className="font-syne text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-[hsl(var(--green-dark))] to-[hsl(var(--orange))] bg-clip-text text-transparent">
-            Ready to eat smarter?
+          <h2 className="font-syne text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-[hsl(var(--text-dark))]">            Ready to eat smarter?
           </h2>
 
           <p className="text-[hsl(var(--text-m))] text-base max-w-2xl mx-auto leading-relaxed mb-10">
