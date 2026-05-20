@@ -23,6 +23,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
+  googleLogin: (token: string) => Promise<User>;
   register: (fullName: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
@@ -46,7 +47,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(freshUser as User);
       saveUser(freshUser);
     } catch {
-      // Token invalid — clear everything silently
       setUser(null);
       removeUser();
       removeToken();
@@ -57,18 +57,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const restore = async () => {
       try {
         const saved = getUser<User>();
-        // Validate saved user has required fields
         if (saved && typeof saved === 'object' && 'id' in saved && 'role' in saved && checkAuth()) {
           setUser(saved);
           await refreshUser();
         } else {
-          // Invalid saved data — clear it
           setUser(null);
           removeUser();
           removeToken();
         }
       } catch {
-        // localStorage read failed
         setUser(null);
         removeUser();
         removeToken();
@@ -86,6 +83,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(user);
     saveUser(user);
     return user;
+  };
+
+  const googleLogin = async (token: string): Promise<User> => {
+    setToken(token);
+    try {
+      const res = await authApi.getProfile();
+      const user = (res as any).user ?? res;
+      setUser(user as User);
+      saveUser(user);
+      return user as User;
+    } catch (err) {
+      removeToken();
+      removeUser();
+      setUser(null);
+      throw err;
+    }
   };
 
   const register = async (
@@ -109,8 +122,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch {
       // Ignore logout API errors
     }
-    // Use React Router navigation instead of window.location
-    // This prevents full page reload which breaks SPA on Vercel
   };
 
   const updateUser = (u: User) => {
@@ -125,6 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!user,
         loading,
         login,
+        googleLogin,
         register,
         logout,
         updateUser,

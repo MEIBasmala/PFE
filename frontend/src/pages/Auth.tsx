@@ -1,5 +1,5 @@
 // src/pages/Auth.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi, usersApi } from '@/services/shared/api';
@@ -15,6 +15,7 @@ import {
   Label,
   Checkbox,
 } from '@/components/ui';
+import { Lock } from 'lucide-react';
 
 type AuthPage = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -40,6 +41,9 @@ const floatingFoodsPositions = [
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get('token');
+  const roleFromUrl = searchParams.get('role');
+  const sourceFromUrl = searchParams.get('source');
+  const errorFromUrl = searchParams.get('error');
 
   const [page, setPage] = useState<AuthPage>('login');
   const [loginEmail, setLoginEmail] = useState('');
@@ -53,11 +57,51 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, googleLogin } = useAuth();
+  const oauthProcessed = useRef(false);
 
+  // Handle Google OAuth callback on mount
   useEffect(() => {
-    if (tokenFromUrl) setPage('reset');
-  }, [tokenFromUrl]);
+    if (oauthProcessed.current) return;
+
+    if (tokenFromUrl && sourceFromUrl === 'oauth') {
+      oauthProcessed.current = true;
+      const completeGoogleLogin = async () => {
+        setLoading(true);
+        try {
+          await googleLogin(tokenFromUrl);
+          const routes: Record<string, string> = {
+            PATIENT: '/patient',
+            NUTRITIONIST: '/nutritionist',
+            ADMIN: '/admin',
+          };
+          const destination = routes[roleFromUrl || ''];
+          if (destination) {
+            navigate(destination);
+          } else {
+            toast.error(`Unknown role: ${roleFromUrl}`);
+            setPage('login');
+          }
+        } catch (err: any) {
+          toast.error(err.message || 'Google sign-in failed');
+          setPage('login');
+        } finally {
+          setLoading(false);
+        }
+      };
+      completeGoogleLogin();
+    } else if (tokenFromUrl) {
+      setPage('reset');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Show error if Google OAuth failed
+  useEffect(() => {
+    if (errorFromUrl === 'google_failed') {
+      toast.error('Google sign-in failed. Please try again.');
+    }
+  }, [errorFromUrl]);
 
   const getPasswordStrength = (pwd: string): number => {
     let s = 0;
@@ -175,11 +219,16 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
+    window.location.href = `${apiBase}/auth/google`;
+  };
+
   const strength = getPasswordStrength(regPassword);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden warm-bg p-6">
-      {/* Floating foods – same as original */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden warm-bg p-4 md:p-6">
+      {/* Floating foods */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {floatingFoodsPositions.map((item, i) => (
           <span
@@ -212,14 +261,13 @@ const Auth = () => {
           </Link>
         </div>
 
-        {/* Card – enhanced shadow + glassmorphic effect */}
+        {/* Card */}
         <Card className="relative overflow-hidden rounded-lg bg-white/10 backdrop-blur-sm border border-white/30 shadow-kl-card transition-all hover:shadow-[0_24px_56px_rgba(0,0,0,0.16)]">
-          {/* Decorative emojis */}
           <span className="absolute -top-2.5 -left-2.5 text-3xl opacity-10 pointer-events-none rotate-[-15deg]">🥗</span>
           <span className="absolute -bottom-2.5 -right-2.5 text-3xl opacity-10 pointer-events-none rotate-[15deg]">🥑</span>
 
           <CardHeader className="text-center pb-2">
-            <CardTitle className="font-syne text-3xl font-extrabold bg-gradient-to-br from-[hsl(var(--text-dark))] to-[hsl(var(--orange))] bg-clip-text text-transparent">
+            <CardTitle className="font-syne text-2xl md:text-3xl font-extraboldbg-gradient-to-br from-[hsl(var(--text-dark))] to-[hsl(var(--orange))] bg-clip-text text-transparent">
               {page === 'login' && 'Welcome Back'}
               {page === 'register' && 'Create Account'}
               {page === 'forgot' && 'Reset Password'}
@@ -262,13 +310,12 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="remember" />
-                    <Label htmlFor="remember" className="text-sm font-normal text-[hsl(var(--text-m))]">
-                      Remember me
-                    </Label>
-                  </div>
+                <div className="flex justify-between items-center flex-wrap gap-2">                  <div className="flex items-center space-x-2">
+                  <Checkbox id="remember" />
+                  <Label htmlFor="remember" className="text-sm font-normal text-[hsl(var(--text-m))]">
+                    Remember me
+                  </Label>
+                </div>
                   <Button
                     type="button"
                     variant="link"
@@ -281,6 +328,7 @@ const Auth = () => {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Logging in...' : 'Log In →'}
                 </Button>
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-[hsl(var(--gray-line))]" />
@@ -289,6 +337,36 @@ const Auth = () => {
                     <span className="bg-transparent px-2 text-[hsl(var(--text-l))]">or</span>
                   </div>
                 </div>
+
+                {/* Google Sign In */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                  Continue with Google
+                </Button>
+
                 <Button
                   type="button"
                   variant="outline"
@@ -357,6 +435,7 @@ const Auth = () => {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating...' : 'Create Account →'}
                 </Button>
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-[hsl(var(--gray-line))]" />
@@ -365,6 +444,36 @@ const Auth = () => {
                     <span className="bg-transparent px-2 text-[hsl(var(--text-l))]">or</span>
                   </div>
                 </div>
+
+                {/* Google Sign In */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                  Continue with Google
+                </Button>
+
                 <Button
                   type="button"
                   variant="outline"
@@ -446,14 +555,14 @@ const Auth = () => {
                 </Button>
               </form>
             )}
-
             <div className="mt-6 pt-3 border-t border-dashed border-[hsl(var(--gray-line))] flex items-center justify-center gap-1.5 text-xs text-[hsl(var(--text-l))] font-sans">
-              🔒 This is a secure, encrypted connection
+              <Lock className="w-3.5 h-3.5 text-[hsl(var(--text-m))]" />
+              This is a secure, encrypted connection
             </div>
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   );
 };
 

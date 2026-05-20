@@ -20,6 +20,8 @@ model User {
   updatedAt           DateTime       @updatedAt
   resetToken          String?
   resetTokenExpiry    DateTime?
+  googleId    String?  @unique
+  avatar      String?
   admin               Admin?
   notifications       Notification[]
   nutritionist        Nutritionist?

@@ -85,26 +85,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'KhabirLens API is running 🚀' });
 });
 
-//  404 Handler 
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
-
-//  Global Error Handler 
-app.use((err, req, res, next) => {
-  console.error(err.stack || err);
-  res.status(500).json({ success: false, message: 'Internal server error' });
-});
-
-//  Start 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`KhabirLens API running on http://localhost:${PORT}`);
-  console.log(`Socket.IO attached`);
-});
 
 
-// Add this BEFORE the 404 handler in server.js
 app.get('/api/debug/db', async (req, res) => {
   try {
     const prisma = require('./config/db');
@@ -124,3 +106,23 @@ app.get('/api/debug/db', async (req, res) => {
     });
   }
 });
+
+
+//  404 Handler 
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
+
+//  Global Error Handler 
+app.use((err, req, res, next) => {
+  console.error(err.stack || err);
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
+//  Start 
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`KhabirLens API running on http://localhost:${PORT}`);
+  console.log(`Socket.IO attached`);
+});
+

@@ -4,7 +4,6 @@ const prisma = require('../../config/db');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-
 //  CACHE SYSTEM
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;
@@ -47,7 +46,6 @@ const isGeneralQuestion = (message) => {
   return general.some(pattern => pattern.test(message));
 };
 
-
 //  PROFESSIONAL LOGGER
 const log = (event, data = {}) => {
   const icons = {
@@ -71,7 +69,6 @@ const log = (event, data = {}) => {
   }));
 };
 
-
 //  INTENT DETECTION
 const detectIntent = (message) => {
   const msg = message.toLowerCase();
@@ -80,6 +77,16 @@ const detectIntent = (message) => {
   if (/plan|diet|خطة|régime/.test(msg)) return 'plan';
   if (/appointment|موعد|consultation|rendez/.test(msg)) return 'appointment';
   return 'general';
+};
+
+//  SENTIMENT DETECTION
+const detectSentiment = (message) => {
+  const negative = /تعبان|حزين|مش مرتاح|خايف|قلقان|stressed|sad|tired|anxious|دéprimé|fatigué/i;
+  const positive = /شكرا|ممتاز|مزيان|bravo|merci|great|excellent/i;
+
+  if (negative.test(message)) return 'negative';
+  if (positive.test(message)) return 'positive';
+  return 'neutral';
 };
 
 //  DYNAMIC CONTEXT
@@ -143,7 +150,6 @@ Weight: ${patient.weight || 'N/A'}kg | Allergies: ${patient.allergies || 'None'}
   return context;
 };
 
-
 //  GEMINI STREAMING
 const callGeminiStream = async (context, history, message) => {
   const model = genAI.getGenerativeModel({
@@ -196,11 +202,9 @@ const callOllamaStream = async (context, history, message) => {
   return response.data;
 };
 
-
 //  SAVE TO DB
 const saveToDb = async (userId, message, fullResponse, provider, intent, duration) => {
   try {
-    //  patientId from userId
     const patient = await prisma.patient.findUnique({
       where: { userId }
     });
@@ -221,7 +225,6 @@ const saveToDb = async (userId, message, fullResponse, provider, intent, duratio
     log('error', { message: 'DB save failed', error: err.message });
   }
 };
-
 
 //  SEND TYPING EVENT
 const sendTyping = (res) => {
@@ -263,12 +266,9 @@ const chat = async (userId, message, history = [], res) => {
     res.end();
     return;
   }
-  
+
   log('start', { userId, intent, messageLength: message.length });
 
-
-
-  
   //  Get Context
   const context = await getDynamicContext(userId, intent);
   if (!context) {
@@ -277,10 +277,18 @@ const chat = async (userId, message, history = [], res) => {
     return;
   }
 
+  //  FIX: Sentiment detection now runs INSIDE the chat function where 'message' and 'context' exist
+  const sentiment = detectSentiment(message);
+  if (sentiment === 'negative') {
+    context += `\nNote: Patient seems stressed or sad. Be extra supportive and empathetic. Consider suggesting they speak with their nutritionist.`;
+  }
+  if (sentiment === 'positive') {
+    context += `\nNote: Patient is in a good mood. Be encouraging and celebrate their progress.`;
+  }
+
   const trimmedHistory = history.slice(-6);
   let provider;
   let fullResponse = '';
-
 
   //  TRY GEMINI (with retry for network errors)
   let geminiSuccess = false;
@@ -313,7 +321,7 @@ const chat = async (userId, message, history = [], res) => {
       //  Network Error → try again
       if (isNetworkError(geminiError) && attempt === 1) {
         log('retry', { provider: 'gemini', reason: 'network_error', attempt: 2 });
-        await new Promise(resolve => setTimeout(resolve, 1000)); // ننتظر ثانية
+        await new Promise(resolve => setTimeout(resolve, 1000));
         continue;
       }
 
@@ -322,7 +330,6 @@ const chat = async (userId, message, history = [], res) => {
       break;
     }
   }
-
 
   //  FALLBACK TO OLLAMA
   if (!geminiSuccess) {
@@ -357,25 +364,25 @@ const chat = async (userId, message, history = [], res) => {
     }
   }
 
-  // Cache General Responses 
+  // Cache General Responses
   if (isGeneralQuestion(message) && fullResponse) {
     const cacheKey = normalize(message);
     setCache(cacheKey, fullResponse);
     log('cache', { message: 'Response cached', key: cacheKey });
   }
 
-  // Save to DB 
+  // Save to DB
   const duration = Date.now() - startTime;
   await saveToDb(userId, message, fullResponse, provider, intent, duration);
 
-  //  End Stream 
+  //  End Stream
   res.write(`event: done\ndata: ${JSON.stringify({ fullResponse, provider, intent, duration })}\n\n`);
   res.end();
 
   log('done', { provider, intent, duration });
 };
 
-//  Get Patient Chat History 
+//  Get Patient Chat History
 const getChatHistory = async (userId, page = 1, limit = 20) => {
   const patient = await prisma.patient.findUnique({
     where: { userId }
@@ -423,8 +430,7 @@ const getChatHistory = async (userId, page = 1, limit = 20) => {
   };
 };
 
-
-//  Get Chatbot Statistics (Admin) 
+//  Get Chatbot Statistics (Admin)
 const getChatbotStats = async () => {
   const [
     totalMessages,
@@ -486,8 +492,6 @@ const getChatbotStats = async () => {
       select: { patientId: true }
     }),
   ]);
-
-
 
   return {
     overview: {

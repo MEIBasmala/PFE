@@ -164,7 +164,14 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
       return true;
     } catch (error) {
       logger.error('AI analysis failed:', error);
-      toast.error('Could not analyze the meal. Please try again.');
+      // Backend still creates the food log even when AI is unavailable.
+      // Refresh the diary so the entry appears, then surface the error.
+      await Promise.all([fetchLogs(date), fetchWeek(date)]).catch(() => {});
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('limit') || msg.includes('quota')) {
+        throw error; // re-throw so PatientAITracker can show the quota toast
+      }
+      toast.error('AI analysis unavailable — meal logged without nutrition data.');
       return false;
     }
   };

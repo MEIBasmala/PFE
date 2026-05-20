@@ -7,14 +7,14 @@
     "seed": "node prisma/seed.js"
   },
   "scripts": {
-  "start": "node src/server.js",
-  "server": "nodemon src/server.js",
-  "stripe": "stripe listen --forward-to localhost:5000/api/payments/webhook",
-  "dev": "concurrently \"npm run server\" \"npm run stripe\"",
-  "db:migrate": "prisma migrate dev",
-  "db:generate": "prisma generate",
-  "db:studio": "prisma studio"
-},
+    "start": "node src/server.js",
+    "server": "nodemon src/server.js",
+    "stripe": "stripe listen --forward-to localhost:5000/api/payments/webhook",
+    "dev": "concurrently \"npm run server\" \"npm run stripe\"",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.22.0",
@@ -32,6 +32,8 @@
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^6.9.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pg": "^8.20.0",
     "prisma": "^5.22.0",
     "socket.io": "^4.8.3",

@@ -19,7 +19,28 @@ const validateRegister = (req, res, next) => {
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
   }
 
+   const passwordError = validatePasswordStrength(password);
+  if (passwordError) {
+    return res.status(400).json({ success: false, message: passwordError });
+  }
+
   next();
+};
+
+const validatePasswordStrength = (password) => {
+  const minLength = password.length >= 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*]/.test(password);
+
+  if (!minLength) return 'Password must be at least 8 characters';
+  if (!hasUpper)  return 'Password must contain uppercase letter';
+  if (!hasLower)  return 'Password must contain lowercase letter';
+  if (!hasNumber) return 'Password must contain a number';
+  if (!hasSpecial) return 'Password must contain special character (!@#$%^&*)';
+
+  return null; // null = valid
 };
 
 //  Login Validation 
@@ -70,6 +91,7 @@ const validateResetPassword = (req, res, next) => {
 
 module.exports = {
   validateRegister,
+  validatePasswordStrength,
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
