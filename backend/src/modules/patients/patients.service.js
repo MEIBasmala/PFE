@@ -54,7 +54,7 @@ const getPatientById = async (patientId, userId) => {
       fullName: patient.user.fullName,
       email: patient.user.email,
     },
-    measurements: patient.measurements[0] || null,
+    measurements: patient.measurements ?? [],
   };
 };
 

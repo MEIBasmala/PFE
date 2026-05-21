@@ -1,5 +1,6 @@
 const foodLogsRepo = require('./food-logs.repository');
 const axios = require('axios');
+const FormData = require('form-data');   // ← NEW: needed for multipart file upload
 const prisma = require('../../config/db');
 
 const getMyFoodLogs = async (userId, date) => {
@@ -30,7 +31,7 @@ const uploadMealImage = async (userId, imageUrl) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Client profile not found');
 
-   // ─── AI QUOTA ENFORCEMENT (BACKEND SECURITY) ───────────────────────────────
+  // ─── AI QUOTA ENFORCEMENT (BACKEND SECURITY) ───────────────────────────────
   const FREE_DAILY_SCANS = 2;
 
   const activeSub = await prisma.subscription.findFirst({
@@ -52,33 +53,69 @@ const uploadMealImage = async (userId, imageUrl) => {
     );
   }
   // ───────────────────────────────────────────────────────────────────────────
+
   let detectedFoods = null;
   let totalCalories = null;
   let confidenceScore = null;
   let aiEstimationData = null;
 
-  // AI service call 
+  // ─── AI SERVICE CALL (REWRITTEN) ───────────────────────────────────────────
   try {
     const startTime = Date.now();
-    const response = await axios.post(`${process.env.AI_SERVICE_URL}/predict`, {
-      image_url: imageUrl,
+
+    // 1. Download the image from Cloudinary (or wherever imageUrl points)
+    const imageResponse = await axios.get(imageUrl, {
+      responseType: 'arraybuffer',
+      timeout: 10000,
+    });
+    const imageBuffer = Buffer.from(imageResponse.data);
+
+    // 2. Build multipart form (file upload) — AI service expects raw bytes, not a URL
+    const form = new FormData();
+    form.append('file', imageBuffer, {
+      filename: 'meal.jpg',
+      contentType: imageResponse.headers['content-type'] || 'image/jpeg',
     });
 
-    const processingTime = (Date.now() - startTime) / 1000;
+    // 3. Send to AI service as multipart/form-data file upload
+    const response = await axios.post(
+      `${process.env.AI_SERVICE_URL}/predict`,
+      form,
+      {
+        headers: form.getHeaders(),
+        timeout: 30000,
+      }
+    );
 
-    detectedFoods = response.data.detected_foods;
-    totalCalories = response.data.total_calories;
-    confidenceScore = response.data.confidence_score;
+    const processingTime = (Date.now() - startTime) / 1000;
+    const data = response.data;
+
+    // 4. Map AI response fields to backend format
+    detectedFoods = data.items || null;
+    totalCalories = data.total_calories || null;
+
+    // AI returns per-item confidence — calculate average for the log
+    confidenceScore =
+      data.items && data.items.length > 0
+        ? data.items.reduce((sum, item) => sum + (item.confidence || 0), 0) /
+          data.items.length
+        : null;
 
     aiEstimationData = {
-      modelVersion: response.data.model_version || 'YOLOv8',
+      modelVersion: 'YOLOv8',
       detectedItems: detectedFoods,
       processingTime,
-      warning: confidenceScore < 0.7,
+      warning: !confidenceScore || confidenceScore < 0.7,
     };
   } catch (aiError) {
     console.log('AI Service unavailable:', aiError.message);
+    // Log extra details if the AI service responded with an error
+    if (aiError.response) {
+      console.log('AI Service status:', aiError.response.status);
+      console.log('AI Service error data:', aiError.response.data);
+    }
   }
+  // ───────────────────────────────────────────────────────────────────────────
 
   // Create Food Log (always created even if AI fails)
   const foodLog = await foodLogsRepo.createFoodLog({

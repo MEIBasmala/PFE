@@ -85,6 +85,7 @@ const createMeasurement = async (patientId, data) => {
       arm: data.arm ?? null,
       thigh: data.thigh ?? null,
       bodyFat: data.bodyFat ?? null,
+      recordedAt: new Date(),   
     },
   });
 };

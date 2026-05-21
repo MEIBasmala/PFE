@@ -168,11 +168,14 @@ export default function PatientHome() {
     )
     : null;
 
-  const measurements: Measurement = profile.data?.measurements?.[0] ?? {
-    id: 0,
-    patientId: 0,
-    recordedAt: new Date().toISOString(),
-  };
+  const emptyMeasurement = useMemo(() => ({
+  id: 0,
+  patientId: 0,
+  recordedAt: new Date().toISOString(),
+}), []);
+
+const measurements: Measurement = profile.data?.measurements?.[0] ?? emptyMeasurement;
+
 
   const [measureOpen, setMeasureOpen] = useState(false);
 
@@ -806,9 +809,11 @@ function MeasurementsModal({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setM(initial);
-    setWeight(currentWeight?.toString() ?? "");
-  }, [initial, currentWeight]);
+    if (open) {
+      setM(initial);
+      setWeight(currentWeight?.toString() ?? "");
+    }
+  }, [open, initial, currentWeight]);
 
   const update = (key: keyof Measurement, val: string) => {
     const num = val === "" ? undefined : Number(val);

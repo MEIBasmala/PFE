@@ -14,9 +14,9 @@ const addProgress = async (userId, { weight, goalWeight }) => {
     patientId: patient.id,
     weight,
     goalWeight: goalWeight || null,
+    recordedAt: new Date(),  
   });
 };
-
 const addNotes = async (userId, progressId, notes) => {
   const nutritionist = await progressRepo.getNutritionistByUserId(userId);
   if (!nutritionist) throw new Error('Nutritionist profile not found');

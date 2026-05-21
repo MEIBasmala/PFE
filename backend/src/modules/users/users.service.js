@@ -199,10 +199,10 @@ const addMeasurement = async (userId, data) => {
       arm: data.arm ?? null,
       thigh: data.thigh ?? null,
       bodyFat: data.bodyFat ?? null,
+      recordedAt: new Date(),   
     },
   });
 };
-
 const VALID_ROLES = ['PATIENT', 'NUTRITIONIST', 'ADMIN'];
 
 const getUsersByRole = async (role) => {
