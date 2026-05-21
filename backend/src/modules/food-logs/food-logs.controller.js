@@ -24,8 +24,8 @@ const getFoodLogById = async (req, res) => {
 
 const uploadMealImage = async (req, res) => {
   try {
-    const { imageUrl } = req.body;
-    const log = await foodLogsService.uploadMealImage(req.user.id, imageUrl);
+    const { imageUrl, category } = req.body;
+    const log = await foodLogsService.uploadMealImage(req.user.id, imageUrl, category);
     res.status(201).json({ success: true, message: 'Meal image uploaded successfully', log });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

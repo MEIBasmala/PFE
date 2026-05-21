@@ -229,12 +229,12 @@ export interface AIEstimation {
 
 /** UI-friendly food log shape (e.g. after upload or manual entry) */
 export interface UIFoodLog {
-  id: number; // consistent with all other entities (was incorrectly `_id`)
+  id: number;
   name: string;
   category: MealCategory;
   calories: number;
   imageUrl?: string;
-  source: "ai" | "manual" | "plan"| "recipe";
+  source: "ai" | "manual" | "plan" | "recipe";
   loggedAt: ISODateString;
   notes?: string;
 }

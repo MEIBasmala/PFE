@@ -13,10 +13,10 @@ import {
   X,
   AlertCircle,
   Loader2,
-  Utensils,      // ← All meals
-  Sunrise,       // ← Breakfast
-  Sun,           // ← Lunch
-  Apple,         // ← Snack
+  Utensils,
+  Sunrise,
+  Sun,
+  Apple,
   Moon,
   Flame,
 } from "lucide-react";
@@ -63,7 +63,7 @@ const CATEGORIES: { value: MealCategory | "all"; label: string; icon: React.Elem
   { value: "snack", label: "Snack", icon: Apple },
   { value: "dinner", label: "Dinner", icon: Moon },
 ];
-// Calculate calorie goal using Mifflin‑St Jeor
+
 function calculateCalorieGoal(profile: PatientProfile | null): { goal: number; missing: string[] } {
   const missing: string[] = [];
   if (!profile) return { goal: DEFAULT_GOAL, missing: ["profile"] };
@@ -123,6 +123,8 @@ export default function PatientAITracker() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  const [scanCategory, setScanCategory] = useState<MealCategory>("breakfast");
+  const [uploadPhase, setUploadPhase] = useState<"uploading" | "analyzing" | "saving">("uploading");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const remaining = Math.max(0, aiScansPerDay - aiScansUsedToday);
@@ -139,6 +141,7 @@ export default function PatientAITracker() {
     setSelectedFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    setScanCategory("breakfast");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -166,12 +169,14 @@ export default function PatientAITracker() {
   const analyze = async () => {
     if (!selectedFile) return;
     if (remaining <= 0) {
-      toast.error("Daily AI scan limit reached. Upgrade your plan to unlock more.");
+      toast.error("Daily AI scan limit reached.");
       return;
     }
     setAnalyzing(true);
+    setUploadPhase("uploading"); // ← Cloudinary upload happens inside uploadFoodLogImage
+
     try {
-      const created = await uploadImage(selectedFile);
+      const created = await uploadImage(selectedFile, scanCategory);
       if (created) {
         resetModal();
         setScanModalOpen(false);
@@ -179,7 +184,7 @@ export default function PatientAITracker() {
         toast.success("Meal analysed and added to your diary!");
       }
     } catch (err) {
-      toast.error((err as Error).message || "Failed to analyse meal. Please try again.");
+      toast.error((err as Error).message || "Failed to analyse meal.");
     } finally {
       setAnalyzing(false);
     }
@@ -211,8 +216,8 @@ export default function PatientAITracker() {
 
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-3 text-center text-sm md:grid-cols-5">
-           <StatItem icon={Flame} value={totals.calories} label="kcal" />
-<StatItem icon={Sparkles} value={Math.max(0, goal - totals.calories)} label="Remaining" />
+            <StatItem icon={Flame} value={totals.calories} label="kcal" />
+            <StatItem icon={Sparkles} value={Math.max(0, goal - totals.calories)} label="Remaining" />
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -273,7 +278,7 @@ export default function PatientAITracker() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10">
                 <CloudUpload className="mx-auto h-10 w-10 text-muted-foreground transition-transform group-hover:scale-105" />
-                <div className="mt-2 font-semibold">Click here to upload you meal image</div>
+                <div className="mt-2 font-semibold">Click here to upload your meal image</div>
               </div>
             </div>
             {remaining <= 0 && (
@@ -304,7 +309,7 @@ export default function PatientAITracker() {
       {/* Manual Entry Dialog */}
       <ManualEntryModal open={manualOpen} onOpenChange={setManualOpen} onSubmit={addLog} date={date} />
 
-      {/* AI Scan Modal – mimics ProgressPhotos modal style */}
+      {/* AI Scan Modal */}
       <Dialog open={scanModalOpen} onOpenChange={(open) => {
         if (!open) resetModal();
         setScanModalOpen(open);
@@ -345,13 +350,8 @@ export default function PatientAITracker() {
 
                   {analyzing && (
                     <>
-                      {/* Warm radial gradient overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent rounded-lg" />
-
-                      {/* Slow breathing glow (orange) */}
                       <div className="absolute inset-0 rounded-lg border-2 border-[hsl(var(--orange))]/60 animate-slow-pulse" />
-
-                      {/* Slow expanding rings (6s cycle) */}
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="relative w-40 h-40">
                           <div className="absolute inset-0 rounded-full border-2 border-[hsl(var(--orange))]/40 animate-slow-ping" />
@@ -359,8 +359,6 @@ export default function PatientAITracker() {
                           <div className="absolute inset-0 rounded-full border border-[hsl(var(--green))]/20 animate-slow-ping [animation-delay:4s]" />
                         </div>
                       </div>
-
-                      {/* Slow floating particles (7s cycle) */}
                       {[...Array(8)].map((_, i) => (
                         <div
                           key={i}
@@ -373,14 +371,10 @@ export default function PatientAITracker() {
                           }}
                         />
                       ))}
-
-                      {/* Warm corner brackets – slower pulse */}
                       <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
                       <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
                       <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
                       <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-[hsl(var(--orange))] animate-pulse [animation-duration:3s]" />
-
-                      {/* AI badge – slow pulse */}
                       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 text-[11px] font-mono text-[hsl(var(--orange))] flex items-center gap-2 shadow-lg">
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--orange))] opacity-75 [animation-duration:3s]"></span>
@@ -407,6 +401,24 @@ export default function PatientAITracker() {
                 )}
               </div>
             )}
+
+            {/* ✅ CATEGORY SELECTOR — outside the image container */}
+            {previewUrl && !analyzing && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Meal Category</Label>
+                <Select value={scanCategory} onValueChange={(v) => setScanCategory(v as MealCategory)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select meal type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="breakfast">Breakfast</SelectItem>
+                    <SelectItem value="lunch">Lunch</SelectItem>
+                    <SelectItem value="snack">Snack</SelectItem>
+                    <SelectItem value="dinner">Dinner</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex gap-2 sm:justify-end">
@@ -425,7 +437,7 @@ export default function PatientAITracker() {
               {analyzing ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Analysing...
+                  {uploadPhase === "uploading" ? "Uploading image..." : "Analysing..."}
                 </>
               ) : (
                 <>
@@ -441,7 +453,6 @@ export default function PatientAITracker() {
   );
 }
 
-// Helper components 
 function StatItem({ icon: Icon, value, label }: { icon: React.ElementType; value: number | string; label: string }) {
   return (
     <div>

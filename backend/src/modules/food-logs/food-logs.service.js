@@ -1,6 +1,5 @@
 const foodLogsRepo = require('./food-logs.repository');
 const axios = require('axios');
-const FormData = require('form-data');   // ← NEW: needed for multipart file upload
 const prisma = require('../../config/db');
 
 const getMyFoodLogs = async (userId, date) => {
@@ -27,13 +26,12 @@ const getDailyAiUsage = async (userId) => {
   return { aiScansUsedToday: count };
 };
 
-const uploadMealImage = async (userId, imageUrl) => {
+const uploadMealImage = async (userId, imageUrl, category) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);
   if (!patient) throw new Error('Client profile not found');
 
-  // ─── AI QUOTA ENFORCEMENT (BACKEND SECURITY) ───────────────────────────────
+  // ─── AI QUOTA ENFORCEMENT ──────────────────────────────────────────────────
   const FREE_DAILY_SCANS = 2;
-
   const activeSub = await prisma.subscription.findFirst({
     where: {
       patientId: patient.id,
@@ -42,11 +40,8 @@ const uploadMealImage = async (userId, imageUrl) => {
     },
     include: { package: true },
   });
-
-  // Fallback to free tier if no subscription exists
   const dailyLimit = activeSub?.package?.aiScansPerDay ?? FREE_DAILY_SCANS;
   const usedToday = await foodLogsRepo.countTodayAiScans(patient.id);
-
   if (usedToday >= dailyLimit) {
     throw new Error(
       `Daily AI scan limit reached (${usedToday}/${dailyLimit}). Upgrade your plan or try again tomorrow.`
@@ -54,70 +49,88 @@ const uploadMealImage = async (userId, imageUrl) => {
   }
   // ───────────────────────────────────────────────────────────────────────────
 
-  let detectedFoods = null;
+  let detectedFoods = {
+    category: category || 'lunch',
+    source: 'ai',
+    name: 'Meal',
+  };
   let totalCalories = null;
   let confidenceScore = null;
   let aiEstimationData = null;
 
-  // ─── AI SERVICE CALL (REWRITTEN) ───────────────────────────────────────────
+  // ─── AI SERVICE CALL ───────────────────────────────────────────────────────
   try {
     const startTime = Date.now();
 
-    // 1. Download the image from Cloudinary (or wherever imageUrl points)
-    const imageResponse = await axios.get(imageUrl, {
-      responseType: 'arraybuffer',
-      timeout: 10000,
-    });
-    const imageBuffer = Buffer.from(imageResponse.data);
-
-    // 2. Build multipart form (file upload) — AI service expects raw bytes, not a URL
-    const form = new FormData();
-    form.append('file', imageBuffer, {
-      filename: 'meal.jpg',
-      contentType: imageResponse.headers['content-type'] || 'image/jpeg',
-    });
-
-    // 3. Send to AI service as multipart/form-data file upload
     const response = await axios.post(
-      `${process.env.AI_SERVICE_URL}/predict`,
-      form,
-      {
-        headers: form.getHeaders(),
-        timeout: 30000,
-      }
+      `${process.env.AI_SERVICE_URL}/predict/url`,
+      { imageUrl },
+      { timeout: 60000 }  // ← increased for HF cold starts
     );
 
     const processingTime = (Date.now() - startTime) / 1000;
     const data = response.data;
 
-    // 4. Map AI response fields to backend format
-    detectedFoods = data.items || null;
-    totalCalories = data.total_calories || null;
+    const rawDetectedItems = data.items || null;
+    totalCalories = data.total_calories ?? null;
 
-    // AI returns per-item confidence — calculate average for the log
-    confidenceScore =
-      data.items && data.items.length > 0
-        ? data.items.reduce((sum, item) => sum + (item.confidence || 0), 0) /
-          data.items.length
-        : null;
+        if (rawDetectedItems && rawDetectedItems.length > 0) {
+      confidenceScore =
+        rawDetectedItems.reduce((sum, item) => sum + (item.confidence || 0), 0) /
+        rawDetectedItems.length;
+
+      // Build name from detected ingredients (max 3 to avoid overflow)
+      const ingredientNames = rawDetectedItems
+        .map((i) => i.name || i.label || 'Unknown item')
+        .filter((n, i, arr) => arr.indexOf(n) === i); // dedupe
+      const displayName = ingredientNames.slice(0, 3).join(', ') +
+        (ingredientNames.length > 3 ? ` +${ingredientNames.length - 3}` : '');
+
+      detectedFoods = {
+        items: rawDetectedItems,
+        category: category || 'lunch',
+        source: 'ai',
+        name: displayName || 'Meal',
+        macros: {
+          protein: data.total_protein_g ?? 0,
+          carbs: data.total_carb_g ?? 0,
+          fat: data.total_fat_g ?? 0,
+        },
+      };
+    }
 
     aiEstimationData = {
       modelVersion: 'YOLOv8',
-      detectedItems: detectedFoods,
+      detectedItems: rawDetectedItems,
       processingTime,
       warning: !confidenceScore || confidenceScore < 0.7,
     };
   } catch (aiError) {
     console.log('AI Service unavailable:', aiError.message);
-    // Log extra details if the AI service responded with an error
     if (aiError.response) {
       console.log('AI Service status:', aiError.response.status);
       console.log('AI Service error data:', aiError.response.data);
     }
+
+    const isTimeout = aiError.code === 'ECONNABORTED' || aiError.message?.includes('timeout');
+    const is404 = aiError.response?.status === 404;
+
+    if (isTimeout) {
+      throw new Error('AI analysis timed out. The service may be waking up — please try again in a moment.');
+    } else if (is404) {
+      throw new Error('AI service not found. Please check the service URL or contact support.');
+    } else {
+      throw new Error('AI analysis failed. Please try again shortly.');
+    }
   }
   // ───────────────────────────────────────────────────────────────────────────
 
-  // Create Food Log (always created even if AI fails)
+  // If AI returned nothing useful, don't save a broken log
+  if (!aiEstimationData || totalCalories === null) {
+    throw new Error('AI could not analyze this image. Please try with a clearer photo of your meal.');
+  }
+
+  // ✅ ONLY create the Food Log after successful AI analysis
   const foodLog = await foodLogsRepo.createFoodLog({
     patientId: patient.id,
     imageUrl,
@@ -126,16 +139,14 @@ const uploadMealImage = async (userId, imageUrl) => {
     confidenceScore,
   });
 
-  // Create AI Estimation if AI succeeded
-  if (aiEstimationData) {
-    await foodLogsRepo.createAIEstimation({
-      foodLogId: foodLog.id,
-      ...aiEstimationData,
-    });
-  }
+  await foodLogsRepo.createAIEstimation({
+    foodLogId: foodLog.id,
+    ...aiEstimationData,
+  });
 
   return await foodLogsRepo.getFoodLogById(foodLog.id);
 };
+
 
 const deleteFoodLog = async (userId, logId) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);

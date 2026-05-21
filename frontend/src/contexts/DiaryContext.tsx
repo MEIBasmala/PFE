@@ -157,21 +157,19 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
     await Promise.all([fetchLogs(date), fetchWeek(date)]);
   };
 
-  const uploadImage = async (file: File, category?: MealCategory): Promise<boolean> => {
+    const uploadImage = async (file: File, category?: MealCategory): Promise<boolean> => {
     try {
       await uploadFoodLogImage(file, category);
-      await Promise.all([fetchLogs(date), fetchWeek(date)]);
+      // Don't block — let diary update in background while modal closes
+      Promise.all([fetchLogs(date), fetchWeek(date)]).catch(() => {});
       return true;
     } catch (error) {
       logger.error('AI analysis failed:', error);
-      // Backend still creates the food log even when AI is unavailable.
-      // Refresh the diary so the entry appears, then surface the error.
-      await Promise.all([fetchLogs(date), fetchWeek(date)]).catch(() => {});
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('limit') || msg.includes('quota')) {
-        throw error; // re-throw so PatientAITracker can show the quota toast
+        throw error;
       }
-      toast.error('AI analysis unavailable — meal logged without nutrition data.');
+      toast.error(msg || 'AI analysis failed. Please try again.');
       return false;
     }
   };
