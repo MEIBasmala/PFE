@@ -2,6 +2,28 @@
 import { api } from './client';
 import type { FoodLog, UIFoodLog, MealCategory, FoodLogUploadResult } from '@/types/api';
 
+// Compress image before upload
+const compressImage = async (file: File, maxWidth = 800): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(1, maxWidth / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Compression failed'));
+      }, 'image/jpeg', 0.85);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+};
 // ── Cloudinary helper ─────────────────────────────────────────────────────────
 const uploadToCloudinary = async (file: File): Promise<string> => {
   const fd = new FormData();
@@ -31,8 +53,12 @@ const toUIFoodLog = (log: FoodLog): UIFoodLog => {
     source: detected.source || (log.imageUrl ? 'ai' : 'manual'),
     loggedAt: log.estimatedAt,
     notes: detected.notes,
-    macros: detected.macros, 
-    items: detected.items,
+    macros: detected.macros ? {
+      protein: Math.round(detected.macros.protein),
+      carbs: Math.round(detected.macros.carbs),
+      fat: Math.round(detected.macros.fat),
+    } : undefined,
+    items: detected.items || undefined,
   };
 };
 
@@ -71,10 +97,14 @@ export const uploadFoodLogImage = async (
   file: File,
   category?: MealCategory
 ): Promise<FoodLogUploadResult> => {
-  // 1. Upload image to Cloudinary (fixes the FormData/JSON.stringify bug)
-  const imageUrl = await uploadToCloudinary(file);
+  // 1. Compress image client-side
+  const compressed = await compressImage(file, 800);
+  const compressedFile = new File([compressed], file.name, { type: 'image/jpeg' });
 
-  // 2. Send the URL + category to your backend as plain JSON
+  // 2. Upload compressed image to Cloudinary
+  const imageUrl = await uploadToCloudinary(compressedFile);
+
+  // 3. Send to backend
   const result = await api.post<{ log: FoodLog; scansRemaining?: number }>(
     '/food-logs/upload',
     { imageUrl, category }

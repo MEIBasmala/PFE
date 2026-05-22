@@ -65,36 +65,45 @@ const uploadMealImage = async (userId, imageUrl, category) => {
     const response = await axios.post(
       `${process.env.AI_SERVICE_URL}/predict/url`,
       { imageUrl },
-      { timeout: 60000 }  // ← increased for HF cold starts
+      { timeout: 60000 }
     );
 
     const processingTime = (Date.now() - startTime) / 1000;
     const data = response.data;
 
     const rawDetectedItems = data.items || null;
-    totalCalories = data.total_calories ?? null;
+    totalCalories = Math.round(data.total_calories ?? 0);
 
-        if (rawDetectedItems && rawDetectedItems.length > 0) {
-      confidenceScore =
-        rawDetectedItems.reduce((sum, item) => sum + (item.confidence || 0), 0) /
-        rawDetectedItems.length;
+    if (rawDetectedItems && rawDetectedItems.length > 0) {
+      // Calculate average confidence across all detections
+      const avgConfidence = rawDetectedItems.reduce((sum, i) => sum + (i.confidence || 0), 0) 
+        / rawDetectedItems.length;
+      
+      // Filter 1: Only individual items above 0.5 confidence
+      const confidentItems = rawDetectedItems.filter((i) => (i.confidence || 0) >= 0.5);
+      
+      // Filter 2: Only show ingredient names if average confidence >= 0.6
+      const ingredientNames = avgConfidence >= 0.6 && confidentItems.length > 0
+        ? confidentItems
+            .map((i) => i.name || i.label || i.class_name || 'Unknown item')
+            .filter((n, i, arr) => arr.indexOf(n) === i)
+        : [];
 
-      // Build name from detected ingredients (max 3 to avoid overflow)
-      const ingredientNames = rawDetectedItems
-        .map((i) => i.name || i.label || i.class_name || 'Unknown item')
-        .filter((n, i, arr) => arr.indexOf(n) === i);
-      const displayName = ingredientNames.slice(0, 3).join(', ') +
-        (ingredientNames.length > 3 ? ` +${ingredientNames.length - 3}` : '');
+      const displayName = ingredientNames.length > 0
+        ? ingredientNames.slice(0, 3).join(', ') + (ingredientNames.length > 3 ? ` +${ingredientNames.length - 3}` : '')
+        : 'Meal';
+
+      confidenceScore = avgConfidence;
 
       detectedFoods = {
-        items: rawDetectedItems,
+        items: rawDetectedItems, // keep all for reference/debug
         category: category || 'lunch',
         source: 'ai',
-        name: displayName || 'Meal',
+        name: displayName,
         macros: {
-          protein: data.total_protein_g ?? 0,
-          carbs: data.total_carb_g ?? 0,
-          fat: data.total_fat_g ?? 0,
+          protein: Math.round(data.total_protein_g ?? 0),
+          carbs: Math.round(data.total_carb_g ?? 0),
+          fat: Math.round(data.total_fat_g ?? 0),
         },
       };
     }
@@ -103,7 +112,7 @@ const uploadMealImage = async (userId, imageUrl, category) => {
       modelVersion: 'YOLOv8',
       detectedItems: rawDetectedItems,
       processingTime,
-      warning: !confidenceScore || confidenceScore < 0.7,
+      warning: !confidenceScore || confidenceScore < 0.6,
     };
   } catch (aiError) {
     console.log('AI Service unavailable:', aiError.message);
@@ -125,12 +134,10 @@ const uploadMealImage = async (userId, imageUrl, category) => {
   }
   // ───────────────────────────────────────────────────────────────────────────
 
-  // If AI returned nothing useful, don't save a broken log
   if (!aiEstimationData || totalCalories === null) {
     throw new Error('AI could not analyze this image. Please try with a clearer photo of your meal.');
   }
 
-  // ✅ ONLY create the Food Log after successful AI analysis
   const foodLog = await foodLogsRepo.createFoodLog({
     patientId: patient.id,
     imageUrl,
@@ -147,7 +154,6 @@ const uploadMealImage = async (userId, imageUrl, category) => {
 
   return await foodLogsRepo.getFoodLogById(foodLog.id);
 };
-
 
 const deleteFoodLog = async (userId, logId) => {
   const patient = await foodLogsRepo.getPatientByUserId(userId);

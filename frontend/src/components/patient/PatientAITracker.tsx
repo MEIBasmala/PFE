@@ -19,6 +19,7 @@ import {
   Apple,
   Moon,
   Flame,
+  Lightbulb
 } from "lucide-react";
 import { useDiary } from "@/contexts/DiaryContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -423,24 +424,44 @@ export default function PatientAITracker() {
               </div>
             )}
 
-            {/* ✅ CATEGORY SELECTOR — outside the image container */}
+                        {/* CATEGORY SELECTOR + TIP — both inside the same conditional */}
             {previewUrl && !analyzing && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Meal Category</Label>
-                <Select value={scanCategory} onValueChange={(v) => setScanCategory(v as MealCategory)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select meal type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="breakfast">Breakfast</SelectItem>
-                    <SelectItem value="lunch">Lunch</SelectItem>
-                    <SelectItem value="snack">Snack</SelectItem>
-                    <SelectItem value="dinner">Dinner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Meal Category</Label>
+                  <Select value={scanCategory} onValueChange={(v) => setScanCategory(v as MealCategory)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select meal type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="breakfast">Breakfast</SelectItem>
+                      <SelectItem value="lunch">Lunch</SelectItem>
+                      <SelectItem value="snack">Snack</SelectItem>
+                      <SelectItem value="dinner">Dinner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* new tip */}
+                <div className="flex items-start gap-2 rounded-md bg-muted/50 p-2.5 text-[11px] text-muted-foreground">
+                  <Lightbulb className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
+                  <span>
+                    Packaged food with a known label?{" "}
+                    <button
+                      onClick={() => {
+                        setScanModalOpen(false);
+                        setManualOpen(true);
+                      }}
+                      className="font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      Use Manual Entry
+                    </button>{" "}
+                    for faster logging.
+                  </span>
+                </div>
+              </>
             )}
-          </div>
+            </div>
 
           <DialogFooter className="flex gap-2 sm:justify-end">
             <Button
