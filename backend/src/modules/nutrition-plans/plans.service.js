@@ -134,11 +134,16 @@ const deletePlan = async (userId, planId) => {
 // Helper to upload PDF buffer to Cloudinary
 const uploadPdfToCloudinary = (buffer, originalName) => {
   return new Promise((resolve, reject) => {
+    // Keep the extension so the URL ends in .pdf
+    const safeName = originalName.replace(/\s+/g, '_');
+    
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         resource_type: 'raw',
         folder: 'meal_plans',
-        public_id: `pdf_${Date.now()}_${originalName.replace(/\.[^/.]+$/, '')}`,
+        public_id: `pdf_${Date.now()}_${safeName.replace(/\.[^/.]+$/, '')}`,
+        // Add this to ensure URL has .pdf at the end
+        format: 'pdf', // Cloudinary will append .pdf to the URL
       },
       (error, result) => {
         if (error) reject(error);

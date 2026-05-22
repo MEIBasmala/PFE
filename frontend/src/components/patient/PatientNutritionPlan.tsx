@@ -119,12 +119,18 @@ export default function PatientMealPlan() {
   };
 
   const handleViewPdf = (url: string | null | undefined) => {
-    if (!url) {
-      toast.error("No PDF available for this plan");
-      return;
-    }
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  if (!url) {
+    toast.error("No PDF available for this plan");
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
 
   // Filter prebuilt meals by search
   const filteredPrebuiltMeals = useMemo(() => {
