@@ -26,11 +26,13 @@ const toUIFoodLog = (log: FoodLog): UIFoodLog => {
     id: log.id,
     name: detected.name || 'Meal',
     category: (detected.category as MealCategory) || 'lunch',
-    calories: log.totalCalories ?? 0,
+    calories: Math.round(log.totalCalories ?? 0),
     imageUrl: log.imageUrl,
     source: detected.source || (log.imageUrl ? 'ai' : 'manual'),
     loggedAt: log.estimatedAt,
     notes: detected.notes,
+    macros: detected.macros, 
+    items: detected.items,
   };
 };
 

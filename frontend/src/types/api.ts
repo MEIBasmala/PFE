@@ -237,6 +237,8 @@ export interface UIFoodLog {
   source: "ai" | "manual" | "plan" | "recipe";
   loggedAt: ISODateString;
   notes?: string;
+  macros?: { protein: number; carbs: number; fat: number };
+  items?: any[]; 
 }
 
 export interface FoodLogUploadResult {

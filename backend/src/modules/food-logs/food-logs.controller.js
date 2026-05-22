@@ -44,7 +44,7 @@ const deleteFoodLog = async (req, res) => {
 const getDailyAiUsage = async (req, res) => {
   try {
     const usage = await foodLogsService.getDailyAiUsage(req.user.id);
-    res.status(200).json(usage);   // { aiScansUsedToday: number }
+    res.status(200).json(usage);
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

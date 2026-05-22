@@ -157,22 +157,21 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
     await Promise.all([fetchLogs(date), fetchWeek(date)]);
   };
 
-    const uploadImage = async (file: File, category?: MealCategory): Promise<boolean> => {
-    try {
-      await uploadFoodLogImage(file, category);
-      // Don't block — let diary update in background while modal closes
-      Promise.all([fetchLogs(date), fetchWeek(date)]).catch(() => {});
-      return true;
-    } catch (error) {
-      logger.error('AI analysis failed:', error);
-      const msg = error instanceof Error ? error.message : '';
-      if (msg.includes('limit') || msg.includes('quota')) {
-        throw error;
-      }
-      toast.error(msg || 'AI analysis failed. Please try again.');
-      return false;
+   const uploadImage = async (file: File, category?: MealCategory): Promise<boolean> => {
+  try {
+    await uploadFoodLogImage(file, category);
+    await Promise.all([fetchLogs(date), fetchWeek(date)]); 
+    return true;
+  } catch (error) {
+    logger.error('AI analysis failed:', error);
+    const msg = error instanceof Error ? error.message : '';
+    if (msg.includes('limit') || msg.includes('quota')) {
+      throw error;
     }
-  };
+    toast.error(msg || 'AI analysis failed. Please try again.');
+    return false;
+  }
+};
 
   return (
     <DiaryContext.Provider

@@ -173,15 +173,15 @@ export default function PatientAITracker() {
       return;
     }
     setAnalyzing(true);
-    setUploadPhase("uploading"); // ← Cloudinary upload happens inside uploadFoodLogImage
+    setUploadPhase("uploading");
 
     try {
       const created = await uploadImage(selectedFile, scanCategory);
       if (created) {
+        setScanModalOpen(false);   
         resetModal();
-        setScanModalOpen(false);
-        await refreshSubscription();
         toast.success("Meal analysed and added to your diary!");
+        refreshSubscription();    
       }
     } catch (err) {
       toast.error((err as Error).message || "Failed to analyse meal.");
@@ -215,8 +215,29 @@ export default function PatientAITracker() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-3 text-center text-sm md:grid-cols-5">
+                   <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-3 text-center text-sm md:grid-cols-5">
             <StatItem icon={Flame} value={totals.calories} label="kcal" />
+            
+            {/* Macro totals */}
+            {(() => {
+              const macroTotals = logs.reduce((acc, log) => {
+                if (log.macros) {
+                  acc.protein += log.macros.protein;
+                  acc.carbs += log.macros.carbs;
+                  acc.fat += log.macros.fat;
+                }
+                return acc;
+              }, { protein: 0, carbs: 0, fat: 0 });
+              const hasMacros = macroTotals.protein > 0 || macroTotals.carbs > 0 || macroTotals.fat > 0;
+              return hasMacros ? (
+                <div className="col-span-2 md:col-span-3 flex items-center justify-center gap-3 text-xs">
+                  <span>P {Math.round(macroTotals.protein)}g</span>
+                  <span>C {Math.round(macroTotals.carbs)}g</span>
+                  <span>F {Math.round(macroTotals.fat)}g</span>
+                </div>
+              ) : <div className="col-span-2 md:col-span-3" />;
+            })()}
+            
             <StatItem icon={Sparkles} value={Math.max(0, goal - totals.calories)} label="Remaining" />
           </div>
 
@@ -454,10 +475,11 @@ export default function PatientAITracker() {
 }
 
 function StatItem({ icon: Icon, value, label }: { icon: React.ElementType; value: number | string; label: string }) {
+  const displayValue = typeof value === 'number' ? Math.round(value) : value;
   return (
     <div>
       <div className="font-bold flex items-center gap-1">
-        <Icon className="h-4 w-4 text-primary" /> <span>{value}</span>
+        <Icon className="h-4 w-4 text-primary" /> <span>{displayValue}</span>
       </div>
       <div className="text-[11px] uppercase text-muted-foreground">{label}</div>
     </div>
@@ -465,6 +487,17 @@ function StatItem({ icon: Icon, value, label }: { icon: React.ElementType; value
 }
 
 function DiaryEntry({ log, onDelete }: { log: UIFoodLog; onDelete: () => void }) {
+  const isAi = log.source === "ai";
+  
+  // Build ingredient list from AI items
+  let ingredientText = "";
+  if (isAi && log.items && log.items.length > 0) {
+    const names = log.items
+      .map((i: any) => i.name || i.label || i.class_name || 'Unknown item')
+      .filter((n: string, i: number, arr: string[]) => arr.indexOf(n) === i);
+    ingredientText = names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3}` : '');
+  }
+
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 p-2">
       {log.imageUrl ? (
@@ -475,10 +508,22 @@ function DiaryEntry({ log, onDelete }: { log: UIFoodLog; onDelete: () => void })
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold">{log.name}</div>
-        <div className="text-xs capitalize text-muted-foreground">
-          {log.category} · {log.source === "ai" ? "AI" : log.source === "recipe" ? "Recipe" : log.source}
+        <div className="truncate text-sm font-semibold">
+          {isAi ? "Meal" : log.name}
         </div>
+        {ingredientText && (
+          <div className="text-xs text-muted-foreground truncate">
+            ({ingredientText})
+          </div>
+        )}
+        <div className="text-xs capitalize text-muted-foreground">
+          {log.category} · {isAi ? "AI" : log.source === "recipe" ? "Recipe" : log.source}
+        </div>
+        {log.macros && (
+          <div className="text-xs">
+            P {Math.round(log.macros.protein)}g · C {Math.round(log.macros.carbs)}g · F {Math.round(log.macros.fat)}g
+          </div>
+        )}
       </div>
       <div className="whitespace-nowrap text-sm font-bold text-primary">{log.calories} kcal</div>
       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>

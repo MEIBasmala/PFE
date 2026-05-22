@@ -81,8 +81,8 @@ const uploadMealImage = async (userId, imageUrl, category) => {
 
       // Build name from detected ingredients (max 3 to avoid overflow)
       const ingredientNames = rawDetectedItems
-        .map((i) => i.name || i.label || 'Unknown item')
-        .filter((n, i, arr) => arr.indexOf(n) === i); // dedupe
+        .map((i) => i.name || i.label || i.class_name || 'Unknown item')
+        .filter((n, i, arr) => arr.indexOf(n) === i);
       const displayName = ingredientNames.slice(0, 3).join(', ') +
         (ingredientNames.length > 3 ? ` +${ingredientNames.length - 3}` : '');
 
@@ -137,6 +137,7 @@ const uploadMealImage = async (userId, imageUrl, category) => {
     detectedFoods,
     totalCalories,
     confidenceScore,
+    estimatedAt: new Date(),
   });
 
   await foodLogsRepo.createAIEstimation({
