@@ -1,7 +1,7 @@
 // src/components/patient/RecipeCard.tsx
 import { useState } from "react";
 import { Clock, BookOpenText, List, ChefHat, Heart } from "lucide-react";
-import { useDiary } from "@/contexts/DiaryContext";  // ← ADD THIS
+import { useDiary } from "@/contexts/DiaryContext";  
 import type { Recipe } from "@/types/api";
 import { toast } from "sonner";
 import {

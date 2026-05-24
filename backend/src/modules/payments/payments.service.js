@@ -124,7 +124,7 @@ const handlePaymentSuccess = async (paymentIntent) => {
       await createNotification(
         parseInt(userId),
         'PAYMENT',
-        `Your payment for ${pkg.name} was successful. Your subscription is active until ${endDate.toLocaleDateString()}.`
+        `Your payment for ${pkg.name} Plan was successful. Your subscription is active until ${endDate.toLocaleDateString()}.`
       );
     } catch (err) {
       console.error('[Payment] Failed to send payment notification:', err.message);
@@ -135,7 +135,7 @@ const handlePaymentSuccess = async (paymentIntent) => {
       if (user) {
         await sendEmail({
           to: user.email,
-          subject: 'KhabirLens — Payment Confirmed 🎉',
+          subject: 'KhabirLens — Payment Confirmed',
           html: `<h2>Payment Successful!</h2>
                  <p>Your ${pkg.name} subscription is now active.</p>
                  <p>Valid until: ${endDate.toLocaleDateString()}</p>`,

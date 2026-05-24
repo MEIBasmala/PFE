@@ -142,7 +142,7 @@ const uploadPdfToCloudinary = (buffer, originalName) => {
         resource_type: 'raw',
         folder: 'meal_plans',
         public_id: `pdf_${Date.now()}_${safeName.replace(/\.[^/.]+$/, '')}`,
-        // Add this to ensure URL has .pdf at the end
+        // to ensure URL has .pdf at the end
         format: 'pdf', // Cloudinary will append .pdf to the URL
       },
       (error, result) => {

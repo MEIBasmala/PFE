@@ -170,7 +170,7 @@ const PatientOnboarding = () => {
         dailyCalorieGoal,
       };
       await usersApi.updateProfile(payload);
-      toast.success("Profile saved! Welcome to KhabirLens 🎉");
+      toast.success("Profile saved! Welcome to KhabirLens ");
       navigate('/patient');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save profile');

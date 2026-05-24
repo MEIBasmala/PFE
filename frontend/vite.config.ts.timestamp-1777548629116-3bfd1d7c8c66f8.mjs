@@ -19,7 +19,7 @@ var vite_config_default = defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"]
   },
-  // ✅ ADD THIS BUILD SECTION
+  // BUILD SECTION
   build: {
     rollupOptions: {
       output: {

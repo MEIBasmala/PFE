@@ -67,8 +67,8 @@ const AdminAuditLogs = () => {
         <CardHeader>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="w-full overflow-x-auto">   {/* ← add this wrapper div */}
-            <Table className="min-w-[560px]">         {/* ← add min-w; 4 columns */}
+          <div className="w-full overflow-x-auto">  
+            <Table className="min-w-[560px]">       
               <TableHeader>
                 <TableRow>
                   <TableHead>Admin</TableHead>

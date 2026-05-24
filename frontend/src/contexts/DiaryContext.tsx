@@ -76,44 +76,38 @@ export const DiaryProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // ── fetch whole week ────────────────────────────────────────────────────────
-  const fetchWeek = useCallback(async (isoDate: string) => {
-    setWeekLoading(true);
-    try {
-      const days = getWeekDates(isoDate);
-      const startDate = days[0];
-      const endDate = days[6];
+const fetchWeek = useCallback(async (isoDate: string) => {
+  setWeekLoading(true);
+  try {
+    const days = getWeekDates(isoDate);
+    const startDate = days[0];
+    const endDate = days[6];
 
-      // Try batch endpoint first (1 call instead of 7)
-      const response = await getMyFoodLogsForWeek(startDate, endDate);
-      
-      // Handle both { success, logs } and direct array responses
-      const responseData = response as { success?: boolean; logs?: UIFoodLog[] };
-      const allLogs: UIFoodLog[] = responseData.logs ?? (Array.isArray(response) ? response : []) ?? [];
+    // Now returns UIFoodLog[] already transformed
+    const allLogs = await getMyFoodLogsForWeek(startDate, endDate);
 
-      // Group by date — use any cast since backend sends estimatedAt but frontend type may call it loggedAt
-      const logsByDate = new Map<string, UIFoodLog[]>();
-      for (const log of allLogs) {
-        const rawDate = (log as any).estimatedAt ?? (log as any).loggedAt ?? new Date();
-        const dateKey = toIsoDate(new Date(rawDate));
-        if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, []);
-        logsByDate.get(dateKey)!.push(log);
-      }
-
-      setWeekData(
-        days.map((d) => ({
-          date: d,
-          calories: (logsByDate.get(d) || []).reduce((sum, log) => sum + (log.calories ?? 0), 0),
-        }))
-      );
-        } catch (error) {
-      logger.error('Batch week fetch failed:', error);
-      // Graceful fallback: show zeroed bars instead of firing 7 parallel calls
-      const days = getWeekDates(isoDate);
-      setWeekData(days.map((d) => ({ date: d, calories: 0 })));
-    } finally {
-      setWeekLoading(false);
+    // Group by date using UIFoodLog fields (calories, loggedAt)
+    const logsByDate = new Map<string, UIFoodLog[]>();
+    for (const log of allLogs) {
+      const dateKey = toIsoDate(new Date(log.loggedAt));
+      if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, []);
+      logsByDate.get(dateKey)!.push(log);
     }
-  }, []);
+
+    setWeekData(
+      days.map((d) => ({
+        date: d,
+        calories: (logsByDate.get(d) || []).reduce((sum, log) => sum + log.calories, 0),
+      }))
+    );
+  } catch (error) {
+    logger.error('Batch week fetch failed:', error);
+    const days = getWeekDates(isoDate);
+    setWeekData(days.map((d) => ({ date: d, calories: 0 })));
+  } finally {
+    setWeekLoading(false);
+  }
+}, []);
 
   // re-fetch day + week whenever the selected date changes
   useEffect(() => {

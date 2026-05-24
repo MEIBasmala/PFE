@@ -20,6 +20,7 @@ import {
   MessageSquare,
   ShieldCheck,
   Gift,
+  CheckCircle2,
 } from "lucide-react";
 
 import { loadStripe } from "@stripe/stripe-js";
@@ -63,7 +64,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui";
-import {logger} from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -361,8 +362,8 @@ const StripePaymentForm = ({
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
 
-  // GUARD: Stripe failed to initialize — show error instead of broken form
   if (!stripe) {
     return (
       <Dialog open onOpenChange={onClose}>
@@ -390,20 +391,55 @@ const StripePaymentForm = ({
     e.preventDefault();
     if (!stripe || !elements) return;
     setProcessing(true);
-    const { error } = await stripe.confirmPayment({
+    setPaymentStatus('processing');
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: window.location.href },
       redirect: "if_required",
     });
+
     if (error) {
       toast.error(error.message);
       logger.error('[StripePaymentForm] Payment failed:', error);
-    } else {
-      toast.success("Payment successful! Subscription activated.");
-      onSuccess();
+      setPaymentStatus('error');
+    } else if (paymentIntent) {
+      // Payment succeeded immediately (no redirect needed)
+      if (paymentIntent.status === 'succeeded') {
+        setPaymentStatus('success');
+        toast.success("Payment successful! Activating your subscription...");
+        onSuccess();
+      } else {
+        // Payment requires additional action or is processing
+        toast.info("Payment is processing. Please wait...");
+      }
     }
     setProcessing(false);
   };
+
+  // Show success state
+  if (paymentStatus === 'success') {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Payment Successful!</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 text-center space-y-3">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Your subscription is being activated. This may take a few seconds...
+            </p>
+          </div>
+          <Button onClick={onClose} className="w-full">
+            Done
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -430,7 +466,6 @@ const StripePaymentForm = ({
     </Dialog>
   );
 };
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PatientSubscription() {
   const { refreshSubscription, packageInfo, plan, subscription } = useSubscription();
@@ -441,6 +476,7 @@ export default function PatientSubscription() {
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [paymentIntentSecret, setPaymentIntentSecret] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [activationPending, setActivationPending] = useState(false);
 
   const freePlan = allPackages.find((p) => isFree(p));
   const sortedEssentials = allPackages
@@ -456,6 +492,38 @@ export default function PatientSubscription() {
         (a.price ?? a.priceMonthly ?? a.priceYearly ?? 0) -
         (b.price ?? b.priceMonthly ?? b.priceYearly ?? 0)
     );
+
+  // ── Handle Stripe redirect return ─────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      window.history.replaceState({}, '', window.location.pathname);
+      toast.success("Payment successful! Activating your subscription...");
+      startPolling();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startPolling = () => {
+    setActivationPending(true);
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const poll = async () => {
+      await refreshSubscription();
+      attempts++;
+
+      if (attempts >= maxAttempts) {
+        setActivationPending(false);
+        toast.info("Your payment was received. Refresh the page if your plan hasn't updated.");
+        return;
+      }
+
+      // Continue polling regardless — let React re-render with fresh context data
+      setTimeout(poll, 1000);
+    };
+
+    poll();
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -512,9 +580,8 @@ export default function PatientSubscription() {
   const onPaymentSuccess = async () => {
     setShowPaymentModal(false);
     setPaymentIntentSecret(null);
-    await refreshSubscription();
-    const histRes = await getPaymentHistory();
-    setHistory(Array.isArray(histRes) ? histRes : []);
+    toast.success("Payment successful! Activating your subscription...");
+    startPolling();
   };
 
   const [cancelling, setCancelling] = useState(false);
@@ -536,9 +603,12 @@ export default function PatientSubscription() {
     }
   };
 
+  // ── Optional: show a global loading banner while polling ───────
+  // You can render this somewhere in your JSX if you want visual feedback
+  // {activationPending && <div className="...">Activating your plan...</div>}
+
   return (
     <>
-      {/* Only mount Elements when we have a clientSecret AND modal is open */}
       {paymentIntentSecret && showPaymentModal && (
         <Elements stripe={stripePromise} options={{ clientSecret: paymentIntentSecret }}>
           <StripePaymentForm
@@ -550,6 +620,14 @@ export default function PatientSubscription() {
           />
         </Elements>
       )}
+
+      {/* Optional activation banner */}
+      {activationPending && (
+        <div className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-center text-sm animate-pulse">
+          🔄 Activating your subscription... please wait
+        </div>
+      )}
+
 
       <div className="space-y-8 px-1 sm:px-0">
         {/* ── Current plan summary ─────────────────────────────────────── */}

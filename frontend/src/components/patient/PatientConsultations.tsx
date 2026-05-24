@@ -7,8 +7,10 @@ import {
   CheckCircle2,
   ExternalLink,
   MessageSquare,
+  CalendarPlus,
   Plus,
   Star,
+  Clock,
   Video,
   X,
 } from "lucide-react";
@@ -114,9 +116,15 @@ export default function PatientConsultations() {
         <CardContent className="p-2">
           <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="w-full">
             <TabsList className="w-full justify-start">
-              <TabsTrigger value="upcoming">📅 Upcoming</TabsTrigger>
-              <TabsTrigger value="past">📜 Past</TabsTrigger>
-              <TabsTrigger value="book">➕ Book New</TabsTrigger>
+              <TabsTrigger value="upcoming">
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" /> Upcoming
+              </TabsTrigger>
+              <TabsTrigger value="past">
+                <Clock className="mr-1.5 h-3.5 w-3.5" /> Past
+              </TabsTrigger>
+              <TabsTrigger value="book">
+                <CalendarPlus className="mr-1.5 h-3.5 w-3.5" /> Book New
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </CardContent>

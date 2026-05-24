@@ -516,7 +516,7 @@ function DiaryEntry({ log, onDelete }: { log: UIFoodLog; onDelete: () => void })
     const names = log.items
       .map((i: any) => i.name || i.label || i.class_name || 'Unknown item')
       .filter((n: string, i: number, arr: string[]) => arr.indexOf(n) === i);
-    ingredientText = names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3}` : '');
+    ingredientText = names.slice(0, 7).join(', ') + (names.length > 7 ? ` +${names.length - 7}` : '');
   }
 
   return (

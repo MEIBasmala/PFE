@@ -148,9 +148,14 @@ export const updateFoodLog = async (
 export const deleteFoodLog = (id: string) =>
   api.delete<{ ok: true }>(`/food-logs/${id}`);
 
-export const getMyFoodLogsForWeek = async (startDate: string, endDate: string) => {
-  const response = await api.get<{ success: boolean; logs: UIFoodLog[] }>(
+export const getMyFoodLogsForWeek = async (startDate: string, endDate: string): Promise<UIFoodLog[]> => {
+  const response = await api.get<{ success: boolean; logs: FoodLog[] }>(
     `/food-logs/week?startDate=${startDate}&endDate=${endDate}`
   );
-  return response;
+  
+  // Extract raw FoodLog array from the wrapped response
+  const rawLogs: FoodLog[] = response?.logs ?? [];
+  
+  // Transform each raw log to UIFoodLog (same transformation as getMyFoodLogs)
+  return rawLogs.map(toUIFoodLog);
 };
